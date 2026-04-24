@@ -121,8 +121,9 @@ export const ALGORITHM_LABELS: Record<string, string> = {
   brute_force: 'Brute Force',
   nearest_neighbor: 'Nearest Neighbor',
   networkx: 'NetworkX',
-  quantum_numpy: 'Quantum (NumPy)',
-  quantum_qaoa: 'Quantum (QAOA)',
+  quantum_numpy: 'Exact Eigensolver (Hamiltoniano)',
+  quantum_exact: 'Exact Eigensolver (Hamiltoniano)',
+  quantum_qaoa: 'QAOA — Variacional (experimental)',
 }
 
 // Haversine distance calculation

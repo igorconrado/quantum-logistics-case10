@@ -238,18 +238,34 @@ export function ConfigPanel() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
-                  <SelectItem value="quantum_numpy">
-                    <div className="flex flex-col">
-                      <span>{t("algo.quantum_numpy")}</span>
-                      <span className="text-xs text-muted-foreground">{t("tooltip.quantumNumpyShort")}</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="quantum_qaoa">
-                    <div className="flex flex-col">
-                      <span>{t("algo.quantum_qaoa")}</span>
-                      <span className="text-xs text-muted-foreground">{t("tooltip.quantumQaoaShort")}</span>
-                    </div>
-                  </SelectItem>
+                  <TooltipProvider>
+                    <Tooltip delayDuration={300}>
+                      <TooltipTrigger asChild>
+                        <SelectItem value="quantum_numpy">
+                          <div className="flex flex-col">
+                            <span>{t("algo.quantum_numpy")}</span>
+                            <span className="text-xs text-muted-foreground">{t("tooltip.quantumNumpyShort")}</span>
+                          </div>
+                        </SelectItem>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-xs">
+                        <p>{t("tooltip.quantumNumpy")}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip delayDuration={300}>
+                      <TooltipTrigger asChild>
+                        <SelectItem value="quantum_qaoa">
+                          <div className="flex flex-col">
+                            <span>{t("algo.quantum_qaoa")}</span>
+                            <span className="text-xs text-muted-foreground">{t("tooltip.quantumQaoaShort")}</span>
+                          </div>
+                        </SelectItem>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-xs">
+                        <p>{t("tooltip.quantumQaoa")}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground px-1">

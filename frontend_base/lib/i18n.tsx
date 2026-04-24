@@ -53,8 +53,9 @@ const dictionaries: Record<Locale, Record<string, string>> = {
     "algo.brute_force": "Força Bruta",
     "algo.nearest_neighbor": "Vizinho Mais Próximo",
     "algo.networkx": "NetworkX",
-    "algo.quantum_numpy": "Quântico (NumPy)",
-    "algo.quantum_qaoa": "Quântico (QAOA)",
+    "algo.quantum_numpy": "Exact Eigensolver (Hamiltoniano)",
+    "algo.quantum_exact": "Exact Eigensolver (Hamiltoniano)",
+    "algo.quantum_qaoa": "QAOA — Variacional (experimental)",
 
     // Results Panel
     "results.results": "Resultados",
@@ -168,10 +169,12 @@ const dictionaries: Record<Locale, Record<string, string>> = {
 
     // Tooltips
     "tooltip.algorithmInfo": "Escolha entre algoritmos clássicos de otimização ou simulações de computação quântica",
-    "tooltip.quantumNumpy": "Simulação de algoritmo quântico usando NumPy. Mais preciso, porém mais lento.",
-    "tooltip.quantumNumpyShort": "Simulação exata via QUBO",
-    "tooltip.quantumQaoa": "Quantum Approximate Optimization Algorithm - ideal para problemas combinatórios",
-    "tooltip.quantumQaoaShort": "Algoritmo variacional híbrido",
+    "tooltip.quantumNumpy": "Diagonalização clássica da matriz Hamiltoniana via NumPyMinimumEigensolver. Serve como referência ótima da formulação QUBO. Limite n ≤ 4 por restrições de memória (2^(n²)).",
+    "tooltip.quantumNumpyShort": "Diagonalização clássica do Hamiltoniano",
+    "tooltip.quantumQaoa": "Algoritmo quântico variacional. Atualmente em desenvolvimento — a UI envia esta opção mas o backend roteia para o Exact Eigensolver. Ver issue #N/A.",
+    "tooltip.quantumQaoaShort": "Variacional (em desenvolvimento)",
+    "tooltip.solverBadge": "Solver: Eigensolver clássico",
+    "tooltip.comparisonOverhead": "Comparação entre brute force e diagonalização do Hamiltoniano. Ambos são clássicos — o speedup mede overhead, não vantagem quântica.",
     "tooltip.realRoads": "Usa API OpenRouteService para calcular rotas reais. Limite: 2000 requisições/dia",
     "tooltip.apiUsage": "{used}/{limit} requisições usadas hoje",
     "tooltip.apiLow": "Poucas requisições restantes!",
@@ -224,8 +227,9 @@ const dictionaries: Record<Locale, Record<string, string>> = {
     "algo.brute_force": "Brute Force",
     "algo.nearest_neighbor": "Nearest Neighbor",
     "algo.networkx": "NetworkX",
-    "algo.quantum_numpy": "Quantum (NumPy)",
-    "algo.quantum_qaoa": "Quantum (QAOA)",
+    "algo.quantum_numpy": "Exact Eigensolver (Hamiltonian)",
+    "algo.quantum_exact": "Exact Eigensolver (Hamiltonian)",
+    "algo.quantum_qaoa": "QAOA — Variational (experimental)",
 
     // Results Panel
     "results.results": "Results",
@@ -339,10 +343,12 @@ const dictionaries: Record<Locale, Record<string, string>> = {
 
     // Tooltips
     "tooltip.algorithmInfo": "Choose between classical optimization algorithms or quantum computing simulations",
-    "tooltip.quantumNumpy": "Quantum algorithm simulation using NumPy. More accurate, but slower.",
-    "tooltip.quantumNumpyShort": "Exact simulation via QUBO",
-    "tooltip.quantumQaoa": "Quantum Approximate Optimization Algorithm - ideal for combinatorial problems",
-    "tooltip.quantumQaoaShort": "Hybrid variational algorithm",
+    "tooltip.quantumNumpy": "Classical diagonalization of the Hamiltonian matrix via NumPyMinimumEigensolver. Serves as the optimal reference for the QUBO formulation. Limit n ≤ 4 due to memory constraints (2^(n²)).",
+    "tooltip.quantumNumpyShort": "Classical Hamiltonian diagonalization",
+    "tooltip.quantumQaoa": "Variational quantum algorithm. Currently under development — the UI sends this option but the backend routes to the Exact Eigensolver. See issue #N/A.",
+    "tooltip.quantumQaoaShort": "Variational (under development)",
+    "tooltip.solverBadge": "Solver: Classical eigensolver",
+    "tooltip.comparisonOverhead": "Comparison between brute force and Hamiltonian diagonalization. Both are classical — the speedup measures overhead, not quantum advantage.",
     "tooltip.realRoads": "Uses OpenRouteService API to calculate real routes. Limit: 2000 requests/day",
     "tooltip.apiUsage": "{used}/{limit} requests used today",
     "tooltip.apiLow": "Few requests remaining!",
