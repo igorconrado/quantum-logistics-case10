@@ -19,6 +19,7 @@ import {
   Cpu,
   Activity,
 } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useRoute } from "@/lib/route-context"
@@ -76,6 +77,11 @@ export function ResultsPanel() {
                         <p className="text-sm font-medium text-foreground">
                           {t(`algo.${results.method}`) !== `algo.${results.method}` ? t(`algo.${results.method}`) : results.method}
                         </p>
+                        {config.algorithmType === "quantum" && (
+                          <Badge variant="secondary" className="mt-1 text-[10px] px-1.5 py-0">
+                            {t("tooltip.solverBadge")}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <div className="text-right">
@@ -294,6 +300,9 @@ function ComparisonCard({ comparison }: { comparison: any }) {
           {isSameSpeed ? t(messageKey) : t(messageKey, { speedup: displaySpeedup })}
         </span>
       </div>
+      <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+        {t("tooltip.comparisonOverhead")}
+      </p>
       {distDiff !== 0 && (
         <p className="text-xs text-muted-foreground text-center mt-2">
           {t("results.distanceDiff")} {distDiff > 0 ? "+" : ""}{distDiff.toFixed(0)} km
