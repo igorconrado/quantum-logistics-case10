@@ -1,66 +1,49 @@
-# Quantum Logistics — Experimental TSP Solver
+# Quantum Logistics — Experimental Brazilian TSP
 
-An educational full-stack project that models small Traveling Salesman Problem (TSP) instances as a Quadratic Unconstrained Binary Optimization (QUBO) problem and compares their solution with classical routing methods.
+An educational full-stack application for comparing classical route solvers with exact classical evaluation of a QUBO model on small Traveling Salesman Problem (TSP) instances. The included dataset covers Brazil's 27 state capitals.
 
-## Problem
+[Live application](https://quantum-logistics-case10.vercel.app) · [API health](https://quantum-logistics-api.vercel.app/api/health) · [API root](https://quantum-logistics-api.vercel.app/)
 
-The application finds a closed route that visits each selected location once. It addresses the single-vehicle TSP, not the full Vehicle Routing Problem: vehicle capacities, multiple vehicles, delivery time windows, traffic, and other operational constraints are outside the current model.
+## Scope
 
-## Implemented scope
+The application finds a closed route for one vehicle that visits each selected location once. It is a TSP demonstrator, not a general Vehicle Routing Problem optimizer: multiple vehicles, capacities, time windows, traffic, and operational dispatch constraints are not modeled.
 
-- TSP formulation with `n²` binary variables, assignment constraints, and a distance-minimization objective.
-- Conversion of the constrained `QuadraticProgram` to QUBO with Qiskit Optimization.
-- Exact minimum-eigensolver execution through `NumPyMinimumEigensolver` for instances of up to four locations.
-- Classical brute-force, nearest-neighbor, and NetworkX approximation solvers.
-- A Flask JSON API for locations, route generation, calculation, routing status, and health checks.
-- Optional OpenRouteService matrix and directions requests for road distances and route geometry; Haversine distance is the fallback.
-- A responsive Next.js dashboard with Leaflet maps, algorithm selection, route history, and timing comparison.
-- Data for Brazil's 27 state capitals and intra-city sample locations.
+Implemented solvers:
 
-The repository contains a QAOA code path, but the application API currently always selects the exact eigensolver. QAOA should therefore be treated as incomplete and is not part of the demonstrated execution path. The timing comparison in the interface measures local classical implementations, including the classically executed exact eigensolver; it is not evidence of quantum advantage.
+| Solver | Execution | Limit | Purpose |
+| --- | --- | ---: | --- |
+| Brute force | Classical | 8 locations | Reproducible exact baseline |
+| Nearest neighbor | Classical | 27 locations | Fast greedy heuristic |
+| NetworkX approximation | Classical | 27 locations | Graph-based approximation |
+| Exact eigensolver | Classical, through Qiskit's quantum optimization stack | 4 locations | Exact evaluation of the QUBO-derived Hamiltonian |
+
+The eigensolver is not quantum hardware execution or evidence of quantum advantage. QAOA is not exposed because it was not reliable in the current application architecture.
 
 ## Architecture
 
 ```text
-Next.js dashboard
-       │ HTTP/JSON
-       ▼
-Flask API (server.py)
-       ├── geospatial data and Haversine matrices
-       ├── classical TSP solvers
-       ├── QUBO model + exact eigensolver
-       └── OpenRouteService client (optional)
+Browser
+  └── Next.js dashboard (Vercel)
+        └── /api rewrite via API_URL
+              └── Flask API (separate Vercel project)
+                    ├── input validation and solver registry
+                    ├── Haversine distance matrix
+                    ├── classical TSP solvers
+                    ├── QUBO model + exact eigensolver
+                    └── OpenRouteService client (optional)
 ```
 
-## Technologies
-
-- Backend: Python, Flask, NumPy, NetworkX, Qiskit, Qiskit Optimization, Requests
-- Frontend: TypeScript, Next.js 16, React 19, Tailwind CSS, shadcn/ui, Leaflet, Framer Motion
-- Deployment configuration: Vercel for the frontend and Railway/Gunicorn for the API
-
-## Technical limitations
-
-This is an experimental demonstration, not a production logistics optimizer.
-
-The time-indexed TSP formulation requires `n²` binary variables, which become qubits after conversion to an Ising operator. Classical simulation of a general quantum state grows exponentially with that qubit count. The backend consequently rejects more than four locations for its exact eigensolver path. The previous README's RAM table was not backed by a reproducible benchmark and has been removed.
-
-Quantum hardware does not remove the model's qubit requirements. Practical execution is also constrained by available qubits, connectivity, circuit depth, sampling, noise, error mitigation, and optimizer behavior. No hardware execution, scaling study, statistically controlled benchmark, or quantum advantage is demonstrated here.
-
-The classical solver uses brute force for at most eight locations and a NetworkX approximation above that threshold. Its results and timings should not be generalized beyond the tested instances.
+The frontend uses a server-side `API_URL`; no backend URL or secret is exposed through a `NEXT_PUBLIC_*` variable. The API restricts CORS with `CORS_ALLOWED_ORIGINS`.
 
 ## Screenshots
 
-| Dashboard | Route result | Comparison |
+| Dashboard | Route | Comparison |
 | --- | --- | --- |
-| ![Initial dashboard](snapshots/01_initial_light.png) | ![Calculated route](snapshots/04_route_calculated_light.png) | ![Algorithm comparison](snapshots/06_comparison_dark.png) |
+| ![Dashboard](snapshots/01_initial_light.png) | ![Calculated route](snapshots/04_route_calculated_light.png) | ![Solver comparison](snapshots/06_comparison_dark.png) |
 
-Additional light and dark screenshots are available in [`snapshots/`](snapshots/).
+## Local setup
 
-## Run locally
-
-### Backend
-
-Python 3.10 or newer is recommended.
+Requirements: Python 3.10+ and Node.js 20+.
 
 ```bash
 git clone https://github.com/igorconrado/quantum-logistics-case10.git
@@ -68,27 +51,20 @@ cd quantum-logistics-case10
 python -m venv .venv
 ```
 
-On macOS or Linux:
+Activate the virtual environment and start the API:
 
 ```bash
+# macOS/Linux
 source .venv/bin/activate
-pip install -r requirements.txt
+
+# Windows PowerShell
+# .\.venv\Scripts\Activate.ps1
+
+pip install -r requirements-dev.txt
 python server.py
 ```
 
-On Windows PowerShell:
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python server.py
-```
-
-The development server defaults to `http://localhost:5001`. The Flask root route still references a removed server-rendered template, so use the JSON endpoints (for example, `http://localhost:5001/api/health`) or run the Next.js frontend.
-
-### Frontend
-
-In a second terminal:
+The API starts at `http://localhost:5001`. In another terminal:
 
 ```bash
 cd frontend_base
@@ -96,85 +72,114 @@ npm ci
 npm run dev
 ```
 
-Open `http://localhost:3000`. The checked-in Next.js configuration proxies local `/api/*` requests to `http://localhost:5001`.
+Open `http://localhost:3000`. The local Next.js rewrite defaults to `http://localhost:5001`.
 
-## Environment variables
+## Configuration
 
-Copy the example file and add only values needed for your environment:
+Copy `.env.example` to `.env` for the backend. The committed example contains no credentials.
 
-```bash
-cp .env.example .env
-```
-
-| Variable | Required | Purpose |
+| Variable | Required | Description |
 | --- | --- | --- |
-| `ORS_API_KEY` | No | Enables OpenRouteService road matrices and route geometry. Without it, the backend uses Haversine distances. |
-| `PORT` | No | Flask port; defaults to `5001` when running `server.py`. |
-| `FLASK_DEBUG` | No | Set to `1` to enable Flask debug mode locally. |
-| `NEXT_PUBLIC_API_URL` | Deployment only | Base URL of the deployed Flask API. Leave unset for the local rewrite. |
+| `HOST` | No | Flask bind host; defaults to `0.0.0.0` |
+| `PORT` | No | Flask port; defaults to `5001` |
+| `FLASK_DEBUG` | No | Local debug flag; disabled by default |
+| `LOG_LEVEL` | No | Python logging level |
+| `CORS_ALLOWED_ORIGINS` | Production | Comma-separated trusted frontend origins |
+| `ORS_API_KEY` | No | Enables OpenRouteService matrices and geometry |
+| `API_URL` | Frontend deployment | Server-side Flask API base URL |
 
-Never commit `.env` files or API keys. Although a development endpoint can set an OpenRouteService key in process memory, environment-based configuration is preferred.
+Without `ORS_API_KEY`, route costs use Haversine distances. API keys cannot be submitted through a public endpoint and must remain in the backend environment.
 
-## Tests and checks
+## API
 
-The root `test_*.py` files are executable integration scripts rather than a conventional isolated pytest suite. Start the backend on port 5000 before running them because they contain a fixed `http://localhost:5000` base URL:
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/` | Service metadata and endpoint links |
+| `GET` | `/api/health` | Stable health response |
+| `GET` | `/api/solvers` | Solver capabilities and limits |
+| `GET` | `/api/brazil-capitals` | Dataset of 27 capitals |
+| `GET` | `/api/cities` | Supported intra-city datasets |
+| `GET` | `/api/city-neighborhoods/<key>` | Hub and sample locations |
+| `POST` | `/api/generate-route` | Generate a bounded sample instance |
+| `POST` | `/api/calculate` | Solve a validated TSP instance |
+| `GET` | `/api/routing-status` | OpenRouteService availability |
+
+Example request:
 
 ```bash
-PORT=5000 python server.py
-python test_api.py
-python test_capitals.py
-python test_depot_selection.py
-python test_implementation.py
-python test_point_selection.py
+curl -X POST http://localhost:5001/api/calculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "solver": "nearest_neighbor",
+    "use_real_roads": false,
+    "locations": [
+      {"id": 0, "name": "São Paulo", "lat": -23.5505, "lon": -46.6333},
+      {"id": 1, "name": "Rio de Janeiro", "lat": -22.9068, "lon": -43.1729},
+      {"id": 2, "name": "Belo Horizonte", "lat": -19.9167, "lon": -43.9345}
+    ]
+  }'
 ```
 
-On Windows PowerShell, use `$env:PORT = "5000"` before starting the server. These scripts primarily print responses and contain few or no assertions, so a zero exit code is not equivalent to comprehensive automated verification.
-
-Frontend production build:
+## Quality gates
 
 ```bash
+# Backend
+python -m pytest -v
+
+# Reproducible small evaluation
+python -m benchmarks.evaluate --cities 3
+
+# Frontend
 cd frontend_base
 npm ci
+npm run lint
 npm run build
+npm audit
 ```
+
+Tests use Flask's test client and mock OpenRouteService. They require no manually started server.
+
+The evaluation records its deterministic input selection, runtime context, solver, route cost, and execution time. Its timings compare implementations on one machine; they do not establish quantum advantage.
+
+## Deployment
+
+- `frontend_base/` is deployed as the `quantum-logistics-case10` Vercel project.
+- `api/index.py` exposes Flask as the separate `quantum-logistics-api` Vercel project.
+- Set frontend `API_URL=https://quantum-logistics-api.vercel.app`.
+- Set backend `CORS_ALLOWED_ORIGINS=https://quantum-logistics-case10.vercel.app`.
+- `railway.json` and `Procfile` remain valid alternatives for a Gunicorn deployment.
+
+No secrets belong in Git or in public frontend variables.
+
+## Technical limitations
+
+- The time-indexed QUBO formulation uses `n²` binary variables. Exact diagonalization grows exponentially and is bounded to four locations.
+- The API limits payload size and accepts at most 27 locations. Brute force is separately capped at eight.
+- Vercel functions have execution limits and are appropriate here only because requests are deliberately bounded.
+- OpenRouteService availability, quota, and road data are external dependencies.
+- No controlled scaling study, QAOA result, hardware quantum run, or quantum advantage is claimed.
+- The project is educational and experimental, not production-scale logistics software.
 
 ## Repository structure
 
 ```text
-.
-├── backend/          # Geospatial data, classical solvers, QUBO model, and ORS client
-├── frontend_base/    # Next.js dashboard
-├── snapshots/        # Existing UI screenshots
-├── server.py         # Flask API entry point
-├── test_*.py         # HTTP integration and exploratory scripts
-├── requirements.txt  # Python dependencies
-├── Procfile          # Gunicorn process definition
-└── railway.json      # Railway deployment configuration
+api/                 Vercel Flask entry point
+backend/             Geospatial logic, routing client, QUBO, and solver strategies
+benchmarks/          Reproducible bounded evaluation
+frontend_base/       Next.js dashboard
+snapshots/           UI screenshots
+tests/               Assertion-based unit and API integration tests
+server.py            Flask application factory and local entry point
+requirements*.txt    Bounded Python runtime and development dependencies
 ```
 
 ## References
 
 - Edward Farhi, Jeffrey Goldstone, and Sam Gutmann, [A Quantum Approximate Optimization Algorithm](https://arxiv.org/abs/1411.4028) (2014).
-- Chris Bernhardt, [Quantum Computing for Everyone](https://mitpress.mit.edu/9780262539531/quantum-computing-for-everyone/) (MIT Press, 2019).
 - Danish Business Authority, [16 Danish Quantum Use Cases](https://erhvervsstyrelsen.dk/sites/default/files/2024-12/16%20Danish%20Quantum%20Use%20Cases%20-%20December%202024_0.pdf), including Case 10 on route planning by KPMG and TDC NET.
 - [Qiskit Optimization documentation](https://qiskit-community.github.io/qiskit-optimization/)
 - [OpenRouteService API documentation](https://openrouteservice.org/dev/#/api-docs)
 
-## Links
+## Author and license
 
-- [Live frontend](https://quantum-logistics-case10.vercel.app) — the page was reachable on August 17, 2026; its `/api/health` route returned 404, so API-backed interactions may be unavailable.
-- [LinkedIn](https://www.linkedin.com/in/igorconrado/)
-- [GitHub profile](https://github.com/igorconrado)
-
-## Realistic next steps
-
-- Wire the QAOA selection through the API and configure a Qiskit sampler explicitly.
-- Replace script-style checks with isolated unit tests and assertion-based API integration tests.
-- Restore and document a reachable production API for the Vercel frontend.
-- Add reproducible benchmark fixtures, environment metadata, and repeated measurements before publishing performance claims.
-- Explore smaller encodings, decomposition, and hybrid heuristics before attempting larger instances or quantum hardware.
-- Extend the model only with validated operational constraints such as capacity, multiple vehicles, or time windows.
-
-## License and credits
-
-Released under the [MIT License](LICENSE). The project was inspired by the Danish quantum use case on route planning and uses the open-source projects referenced above. Created by [Igor Conrado](https://github.com/igorconrado).
+[Igor Conrado](https://github.com/igorconrado) · [LinkedIn](https://www.linkedin.com/in/igorconrado/) · [MIT License](LICENSE)
