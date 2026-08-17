@@ -70,25 +70,19 @@ def calculate_route_distance(route: List[int], distance_matrix: np.ndarray) -> f
     return total
 
 
-def solve_quantum(distance_matrix: np.ndarray, use_exact: bool = True) -> Dict:
+def solve_quantum(distance_matrix: np.ndarray) -> Dict:
     """
     Resolve TSP usando otimização quântica (simulação).
 
     Args:
         distance_matrix: Matriz NxN de distâncias
-        use_exact: Se True, usa solver exato (NumPy). Se False, usa QAOA.
-
     Returns:
         Dict com 'route', 'total_distance', 'method', 'time_ms', 'success'
     """
     start_time = time.time()
     n = len(distance_matrix)
 
-    # LIMITAÇÃO CRÍTICA: NumPyMinimumEigensolver precisa de 2^(n*n) elementos em memória RAM
-    # Para n=4: 2^16 = 65k elementos (~500KB RAM)
-    # Para n=5: 2^25 = 33M elementos (~256MB RAM teórico, mas Qiskit usa mais!)
-    # Para n=6: 2^36 = 68B elementos (~512GB RAM) - IMPOSSÍVEL!
-    # NOTA: Na prática, 5 pontos tentou alocar 7.5GB e crashou o servidor
+    # The n²-variable formulation and exact diagonalization are intentionally bounded.
     if n > 4:
         elapsed_time = (time.time() - start_time) * 1000
         return {
@@ -97,7 +91,7 @@ def solve_quantum(distance_matrix: np.ndarray, use_exact: bool = True) -> Dict:
             "method": "quantum_failed",
             "time_ms": elapsed_time,
             "success": False,
-            "error": f"Quantum solver limited to 4 points (you have {n}). RAM memory requirement: 2^{n*n} = {2**(n*n):,} elements (~{2**(n*n)*8/1024**3:.1f} GB RAM minimum)"
+            "error": f"Exact eigensolver limited to 4 locations (received {n})"
         }
 
     try:
@@ -108,19 +102,9 @@ def solve_quantum(distance_matrix: np.ndarray, use_exact: bool = True) -> Dict:
         converter = QuadraticProgramToQubo()
         qubo = converter.convert(qp)
 
-        # Escolher solver
-        if use_exact:
-            # Usar solver exato (para testes e problemas pequenos)
-            solver = NumPyMinimumEigensolver()
-            method = "quantum_exact"
-        else:
-            # Importar QAOA apenas se necessário (pode ser pesado)
-            from qiskit_algorithms import QAOA
-            from qiskit_algorithms.optimizers import COBYLA
-
-            qaoa = QAOA(optimizer=COBYLA(), reps=1)
-            solver = qaoa
-            method = "quantum_qaoa"
+        # Exact diagonalization is classical; Qiskit supplies the modeling stack.
+        solver = NumPyMinimumEigensolver()
+        method = "exact_eigensolver"
 
         # Executar otimização
         optimizer = MinimumEigenOptimizer(solver)
@@ -178,7 +162,7 @@ def test_quantum_solver():
 
     # Teste com solver exato
     print("\nExecutando Solver Quântico (Exato - NumPy)...")
-    result = solve_quantum(test_matrix, use_exact=True)
+    result = solve_quantum(test_matrix)
 
     if result['success']:
         print(f"\n[OK] Solução encontrada!")
