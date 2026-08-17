@@ -19,12 +19,14 @@ import {
   Cpu,
   Activity,
 } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useRoute } from "@/lib/route-context"
 import { useTranslation } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
+import type { City, ComparisonResult, RouteResult } from "@/lib/types"
 
 export function ResultsPanel() {
   const { results, comparison, history, clearHistory, config } = useRoute()
@@ -221,7 +223,7 @@ function MetricCard({
   unit,
   color,
 }: {
-  icon: any
+  icon: LucideIcon
   label: string
   value: string
   unit?: string
@@ -248,7 +250,7 @@ function MetricCard({
   )
 }
 
-function ComparisonCard({ comparison }: { comparison: any }) {
+function ComparisonCard({ comparison }: { comparison: ComparisonResult }) {
   const { t } = useTranslation()
   const rawSpeedup = comparison.speedup || 1
   const distDiff = comparison.distanceDiff || 0
@@ -312,7 +314,7 @@ function ComparisonCard({ comparison }: { comparison: any }) {
   )
 }
 
-function exportCSV(results: any, t: (key: string, params?: Record<string, string | number>) => string) {
+function exportCSV(results: RouteResult, t: (key: string, params?: Record<string, string | number>) => string) {
   const rows = [
     [t("csv.metric"), t("csv.value")],
     [t("csv.totalDistance"), results.totalDistance],
@@ -325,7 +327,7 @@ function exportCSV(results: any, t: (key: string, params?: Record<string, string
   if (results.sequence) {
     rows.push(["", ""])
     rows.push([t("csv.routeSequence"), ""])
-    results.sequence.forEach((city: any, i: number) => {
+    results.sequence.forEach((city: City, i: number) => {
       rows.push([t("csv.stop", { n: i + 1 }), city.name])
     })
   }

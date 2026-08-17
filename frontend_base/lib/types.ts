@@ -8,7 +8,6 @@ export interface City {
   lng: number
   isHub?: boolean
 }
-
 export interface Neighborhood {
   name: string
   lat: number
@@ -28,7 +27,7 @@ export interface RoutePoint {
 export type RouteMode = 'intercities' | 'intracidade'
 export type AlgorithmType = 'classical' | 'quantum'
 export type ClassicalAlgorithm = 'brute_force' | 'nearest_neighbor' | 'networkx'
-export type QuantumAlgorithm = 'quantum_numpy' | 'quantum_qaoa'
+export type QuantumAlgorithm = 'quantum_numpy'
 
 export interface RouteConfig {
   mode: RouteMode
@@ -114,7 +113,6 @@ export const ALGORITHM_LIMITS: Record<string, number> = {
   nearest_neighbor: 50,
   networkx: 50,
   quantum_numpy: 4,
-  quantum_qaoa: 4,
 }
 
 export const ALGORITHM_LABELS: Record<string, string> = {
@@ -123,7 +121,6 @@ export const ALGORITHM_LABELS: Record<string, string> = {
   networkx: 'NetworkX',
   quantum_numpy: 'Exact Eigensolver (Hamiltoniano)',
   quantum_exact: 'Exact Eigensolver (Hamiltoniano)',
-  quantum_qaoa: 'QAOA — Variacional (experimental)',
 }
 
 // Haversine distance calculation
@@ -231,33 +228,3 @@ export function bruteForceTSP(distMatrix: number[][]): { route: number[]; distan
   return { route: bestRoute, distance: bestDistance }
 }
 
-// Simulated quantum optimization (for demo)
-export function quantumTSP(distMatrix: number[][]): { route: number[]; distance: number; iterations: number } {
-  // Simulate QAOA-like behavior with random sampling and selection
-  const n = distMatrix.length
-  const numSamples = 100
-  let bestRoute: number[] = []
-  let bestDistance = Infinity
-
-  for (let sample = 0; sample < numSamples; sample++) {
-    // Random permutation
-    const cities = Array.from({ length: n - 1 }, (_, i) => i + 1)
-    for (let i = cities.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[cities[i], cities[j]] = [cities[j], cities[i]]
-    }
-    
-    const route = [0, ...cities, 0]
-    let distance = 0
-    for (let i = 0; i < route.length - 1; i++) {
-      distance += distMatrix[route[i]][route[i + 1]]
-    }
-    
-    if (distance < bestDistance) {
-      bestDistance = distance
-      bestRoute = route
-    }
-  }
-
-  return { route: bestRoute, distance: bestDistance, iterations: numSamples }
-}
