@@ -121,6 +121,7 @@ export const ALGORITHM_LABELS: Record<string, string> = {
   networkx: 'NetworkX',
   quantum_numpy: 'Exact Eigensolver (Hamiltoniano)',
   quantum_exact: 'Exact Eigensolver (Hamiltoniano)',
+  exact_eigensolver: 'Eigensolver Exato (Clássico)',
 }
 
 // Haversine distance calculation
