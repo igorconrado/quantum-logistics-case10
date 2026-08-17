@@ -1,4 +1,5 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || ""
+// Browser requests remain same-origin; Next.js proxies /api through the server-only API_URL.
+const API_BASE = ""
 
 interface BackendLocation {
   id: number
