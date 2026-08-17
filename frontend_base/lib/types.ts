@@ -228,4 +228,3 @@ export function bruteForceTSP(distMatrix: number[][]): { route: number[]; distan
 
   return { route: bestRoute, distance: bestDistance }
 }
-
