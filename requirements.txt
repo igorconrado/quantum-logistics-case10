@@ -1,26 +1,13 @@
-# Web Framework
-flask>=3.0.0
-flask-cors>=4.0.0
-gunicorn>=21.2.0
+# Runtime dependencies. Bounds permit security updates without unreviewed major upgrades.
+Flask>=3.1,<4
+flask-cors>=6.0,<7
+gunicorn>=23,<27
+networkx>=3.6,<4
+numpy>=2.0,<3
+python-dotenv>=1.1,<2
+requests>=2.32,<3
 
-# Computação Quântica
-qiskit>=0.45.0
-qiskit-aer>=0.13.0
-qiskit-algorithms>=0.3.0
-qiskit-optimization>=0.6.0
-
-# Algoritmos Clássicos e Grafos
-networkx>=3.1
-
-# Processamento Numérico
-numpy>=1.24.0
-pandas>=2.0.0
-
-# Visualização
-matplotlib>=3.7.0
-
-# Real Roads Routing (OpenRouteService)
-requests>=2.31.0
-
-# Environment Variables (optional)
-python-dotenv>=1.0.0
+# Quantum optimization modeling and the bounded exact eigensolver path.
+qiskit>=2.2,<3
+qiskit-algorithms>=0.4,<0.5
+qiskit-optimization>=0.7,<0.8

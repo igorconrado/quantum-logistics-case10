@@ -48,7 +48,7 @@ import {
 import { useRoute } from "@/lib/route-context"
 import { useTranslation } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
-import { ALGORITHM_LIMITS, BRAZIL_CAPITALS } from "@/lib/types"
+import { ALGORITHM_LIMITS, BRAZIL_CAPITALS, type ClassicalAlgorithm } from "@/lib/types"
 
 export function ConfigPanel() {
   const {
@@ -211,7 +211,7 @@ export function ConfigPanel() {
           {config.algorithmType === "classical" ? (
             <Select
               value={config.classicalMethod}
-              onValueChange={(v) => updateConfig({ classicalMethod: v as any })}
+              onValueChange={(v) => updateConfig({ classicalMethod: v as ClassicalAlgorithm })}
             >
               <SelectTrigger className="bg-secondary/50 border-border">
                 <SelectValue />
@@ -230,49 +230,10 @@ export function ConfigPanel() {
             </Select>
           ) : (
             <div className="space-y-2">
-              <Select
-                value={config.quantumMethod}
-                onValueChange={(v) => updateConfig({ quantumMethod: v as any })}
-              >
-                <SelectTrigger className="bg-secondary/50 border-border">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper" sideOffset={4}>
-                  <TooltipProvider>
-                    <Tooltip delayDuration={300}>
-                      <TooltipTrigger asChild>
-                        <SelectItem value="quantum_numpy">
-                          <div className="flex flex-col">
-                            <span>{t("algo.quantum_numpy")}</span>
-                            <span className="text-xs text-muted-foreground">{t("tooltip.quantumNumpyShort")}</span>
-                          </div>
-                        </SelectItem>
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="max-w-xs">
-                        <p>{t("tooltip.quantumNumpy")}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip delayDuration={300}>
-                      <TooltipTrigger asChild>
-                        <SelectItem value="quantum_qaoa">
-                          <div className="flex flex-col">
-                            <span>{t("algo.quantum_qaoa")}</span>
-                            <span className="text-xs text-muted-foreground">{t("tooltip.quantumQaoaShort")}</span>
-                          </div>
-                        </SelectItem>
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="max-w-xs">
-                        <p>{t("tooltip.quantumQaoa")}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground px-1">
-                {config.quantumMethod === "quantum_numpy"
-                  ? t("tooltip.quantumNumpy")
-                  : t("tooltip.quantumQaoa")}
-              </p>
+              <div className="rounded-md border border-border bg-secondary/50 px-3 py-2 text-sm">
+                {t("algo.quantum_numpy")}
+              </div>
+              <p className="text-xs text-muted-foreground px-1">{t("tooltip.quantumNumpy")}</p>
             </div>
           )}
         </div>
