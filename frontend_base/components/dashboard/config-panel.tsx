@@ -302,7 +302,7 @@ export function ConfigPanel() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4}>
-                {[3, 4, 5, 6, 7, 8, 10, 12, 15, 20, 27].filter((n) => n <= currentLimit).map((n) => (
+                {[2, 3, 4, 5, 6, 7, 8, 10, 12, 15, 20, 27].filter((n) => n <= currentLimit).map((n) => (
                   <SelectItem key={n} value={String(n)}>{n}</SelectItem>
                 ))}
               </SelectContent>
