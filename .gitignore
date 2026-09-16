@@ -91,6 +91,9 @@ CLAUDE.md
 
 # Windows artifacts
 nul
+.vercel/
+.env*
+!.env.example
 
 # Local agent files and test artifacts
 .Codex/

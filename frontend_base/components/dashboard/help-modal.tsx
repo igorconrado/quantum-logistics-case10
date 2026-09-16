@@ -193,7 +193,6 @@ function AlgorithmsContent() {
       borderColor: "border-ibmec-blue/30",
       methods: [
         { name: t("algo.quantum_numpy"), desc: t("help.quantumNumpyDesc"), limit: "4" },
-        { name: t("algo.quantum_qaoa"), desc: t("help.quantumQaoaDesc"), limit: "4" },
       ],
     },
   ]

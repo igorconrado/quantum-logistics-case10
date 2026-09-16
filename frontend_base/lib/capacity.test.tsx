@@ -3,7 +3,7 @@ import React from "react"
 import { act, renderHook } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { RouteProvider, useRoute } from "./route-context"
-import { calculateRoute, getCityNeighborhoods } from "./api"
+import { getCityNeighborhoods } from "./api"
 import { generationLimit, normalizeConfig, pointLimit } from "./capacity"
 import { BRAZIL_CAPITALS, type RouteConfig } from "./types"
 
@@ -19,7 +19,6 @@ const config: RouteConfig = {
   mode: "intracidade", selectedCity: "belo_horizonte", algorithmType: "quantum",
   quantumMethod: "quantum_numpy", classicalMethod: "brute_force", numPoints: 8, useRealRoads: false,
 }
-const response = { success: true, route: [0, 1, 0], total_distance: 0.25, time_ms: 0.15, method: "brute_force", used_real_roads: true }
 const wrapper = ({ children }: { children: React.ReactNode }) => <RouteProvider>{children}</RouteProvider>
 
 beforeEach(() => { vi.clearAllMocks() })

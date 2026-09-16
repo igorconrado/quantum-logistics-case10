@@ -7,6 +7,6 @@ it.each([200, 401, 429, 500])("propagates API failure with HTTP %s", async (stat
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(
     JSON.stringify({ success: false, error: "Roteamento indisponível" }), { status },
   )))
-  await expect(calculateRoute({ locations: [], algorithm: "classical", use_real_roads: true }))
+  await expect(calculateRoute({ locations: [], solver: "nearest_neighbor", use_real_roads: true }))
     .rejects.toThrow("Roteamento indisponível")
 })

@@ -11,7 +11,7 @@ ALGORITHM_LIMITS = json.loads(
 def validate_capacity(algorithm, method, count):
     default = "quantum_numpy" if algorithm == "quantum" else "nearest_neighbor"
     method = method or default
-    allowed = ("quantum_numpy", "quantum_qaoa") if algorithm == "quantum" else (
+    allowed = ("quantum_numpy",) if algorithm == "quantum" else (
         "brute_force", "nearest_neighbor", "networkx"
     )
     if algorithm not in ("classical", "quantum") or method not in allowed:

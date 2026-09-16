@@ -1,4 +1,5 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || ""
+// Browser requests remain same-origin; Next.js proxies /api through the server-only API_URL.
+const API_BASE = ""
 
 interface BackendLocation {
   id: number
@@ -9,8 +10,7 @@ interface BackendLocation {
 
 interface CalculateRequest {
   locations: BackendLocation[]
-  algorithm: "classical" | "quantum"
-  method?: string
+  solver: "brute_force" | "nearest_neighbor" | "networkx" | "exact_eigensolver"
   use_real_roads: boolean
 }
 
@@ -21,6 +21,9 @@ interface CalculateResponse {
   total_distance: number
   time_ms: number
   method: string
+  solver: string
+  solver_label: string
+  execution: "classical" | "classical_quantum_model"
   used_real_roads: boolean
   route_geometry?: [number, number][]
   total_duration_min?: number
@@ -89,13 +92,6 @@ export async function calculateRoute(req: CalculateRequest): Promise<CalculateRe
 
 export async function getRoutingStatus(): Promise<RoutingStatusResponse> {
   return apiFetch<RoutingStatusResponse>("/api/routing-status")
-}
-
-export async function setApiKey(apiKey: string): Promise<{ success: boolean; message?: string; error?: string }> {
-  return apiFetch("/api/set-api-key", {
-    method: "POST",
-    body: JSON.stringify({ api_key: apiKey }),
-  })
 }
 
 export async function getHealth(): Promise<HealthResponse> {

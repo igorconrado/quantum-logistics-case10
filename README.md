@@ -1,435 +1,188 @@
-# Quantum Logistics - VRP Solver
+# Quantum Logistics — Experimental Brazilian TSP
 
-[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Qiskit](https://img.shields.io/badge/Qiskit-0.45+-purple.svg)](https://qiskit.org/)
-[![Flask](https://img.shields.io/badge/Flask-3.0+-red.svg)](https://flask.palletsprojects.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+An educational full-stack application for comparing classical route solvers with exact classical evaluation of a QUBO model on small Traveling Salesman Problem (TSP) instances. The included dataset covers Brazil's 27 state capitals.
 
-> **Hybrid quantum-classical optimization for vehicle routing problems using QUBO formulation and QAOA algorithms**
+[Live application](https://quantum-logistics-case10.vercel.app) · [API health](https://quantum-logistics-api.vercel.app/api/health) · [API root](https://quantum-logistics-api.vercel.app/)
 
----
+## Scope
 
-## Project Overview
+The application finds a closed route for one vehicle that visits each selected location once. It is a TSP demonstrator, not a general Vehicle Routing Problem optimizer: multiple vehicles, capacities, time windows, traffic, and operational dispatch constraints are not modeled.
 
-### The Problem
-Traditional logistics companies face the **Vehicle Routing Problem (VRP)**: finding the most efficient routes for delivery vehicles while minimizing distance, time, and fuel costs. Classical algorithms struggle with computational complexity as the number of locations grows (NP-hard problem).
+Implemented solvers:
 
-### The Solution
-This project implements a **hybrid quantum-classical approach** to solve the Traveling Salesman Problem (TSP), a simplified version of VRP:
+| Solver | Execution | Limit | Purpose |
+| --- | --- | ---: | --- |
+| Brute force | Classical | 8 locations | Reproducible exact baseline |
+| Nearest neighbor | Classical | 27 locations | Fast greedy heuristic |
+| NetworkX approximation | Classical | 27 locations | Graph-based approximation |
+| Exact eigensolver | Classical, through Qiskit's quantum optimization stack | 4 locations | Exact evaluation of the QUBO-derived Hamiltonian |
 
-- **Classical Solver**: Uses traditional algorithms (Brute Force for small instances, NetworkX approximation for larger ones)
-- **Quantum Solver**: Translates the problem into QUBO (Quadratic Unconstrained Binary Optimization) format and solves using quantum simulation with Qiskit
-- **Real Roads Integration**: Uses OpenRouteService API to calculate routes following actual streets and highways
+The eigensolver is not quantum hardware execution or evidence of quantum advantage. QAOA is not exposed because it was not reliable in the current application architecture.
 
-### Context
-Based on **Case 10 from KPMG/TDC Net's Danish Quantum Case Collection**, this project explores practical applications of quantum computing in logistics optimization.
+## Architecture
 
----
+```text
+Browser
+  └── Next.js dashboard (Vercel)
+        └── /api rewrite via API_URL
+              └── Flask API (separate Vercel project)
+                    ├── input validation and solver registry
+                    ├── Haversine distance matrix
+                    ├── classical TSP solvers
+                    ├── QUBO model + exact eigensolver
+                    └── OpenRouteService client (optional)
+```
 
-## Tech Stack
-
-| Category | Technologies |
-|----------|-------------|
-| **Language** | Python 3.10+, TypeScript |
-| **Quantum Core** | Qiskit, Qiskit Aer, Qiskit Optimization, Qiskit Algorithms |
-| **Frontend** | Next.js 16, React, Tailwind CSS, Shadcn/UI, Framer Motion |
-| **Maps** | React-Leaflet, Leaflet.js |
-| **Backend API** | Flask, Flask-CORS |
-| **Classical Algorithms** | NetworkX, NumPy |
-| **Geospatial** | Haversine distance, OpenRouteService API |
-| **Data Processing** | Pandas, NumPy, Requests |
-| **Theming** | next-themes (Light/Dark mode with Ibmec corporate colors) |
-| **Configuration** | python-dotenv |
-
----
+The frontend uses a server-side `API_URL`; no backend URL or secret is exposed through a `NEXT_PUBLIC_*` variable. The API restricts CORS with `CORS_ALLOWED_ORIGINS`.
 
 ## Screenshots
 
-### Light Theme
-![Light Theme](snapshots/01_initial_light.png)
-*Dashboard with Ibmec corporate theme (light mode)*
+| Dashboard | Route | Comparison |
+| --- | --- | --- |
+| ![Dashboard](snapshots/01_initial_light.png) | ![Calculated route](snapshots/04_route_calculated_light.png) | ![Solver comparison](snapshots/06_comparison_dark.png) |
 
-### Dark Theme
-![Dark Theme](snapshots/02_initial_dark.png)
-*Professional dark mode interface*
+## Local setup
 
-### Route with Waypoints
-![Points Generated](snapshots/03_points_generated.png)
-*Waypoints loaded on the interactive map*
+Requirements: Python 3.10+ and Node.js 20+.
 
-### Route Calculated (Light Mode)
-![Route Light](snapshots/04_route_calculated_light.png)
-*Optimized route with metrics panel*
-
-### Route Calculated (Dark Mode)
-![Route Dark](snapshots/05_route_calculated_dark.png)
-*Same route in dark theme*
-
-### Algorithm Comparison
-![Comparison](snapshots/06_comparison_dark.png)
-*Classical vs Quantum algorithm comparison*
-
----
-
-## Key Features
-
-- **Interactive Map Interface**: Visualize delivery points and optimized routes on an interactive map
-- **Dual Routing Modes**:
-  - **Inter-City**: Route optimization between Brazilian state capitals (10 cities)
-  - **Intra-City**: Route optimization within a single city (neighborhoods)
-- **Hybrid Solver**: Switch between classical and quantum algorithms
-- **Real Roads Routing**: Calculate routes using actual streets and highways via OpenRouteService API
-- **Real-time Metrics Dashboard**:
-  - Total distance (km)
-  - Estimated travel time (minutes)
-  - Estimated fuel cost (BRL)
-  - Computation time (ms)
-  - Algorithm comparison
-- **Route Visualization**:
-  - Solid line for real road routes
-  - Dashed line for straight-line (Haversine) routes
-  - Numbered markers showing route order (1, 2, 3...)
-- **10 Brazilian Capitals**: Pre-configured cities for inter-city routing
-- **10 Cities for Intra-City**: Each with multiple neighborhoods for testing
-
----
-
-## Theoretical Background
-
-### Vehicle Routing Problem (VRP)
-The VRP is a combinatorial optimization problem asking: *"What is the optimal set of routes for a fleet of vehicles to traverse in order to deliver to a given set of customers?"*
-
-This project focuses on the **Traveling Salesman Problem (TSP)**, where a single vehicle must visit all locations exactly once and return to the depot.
-
-### QUBO Formulation
-The TSP is translated into a **Quadratic Unconstrained Binary Optimization** problem:
-
-**Variables**: `x[i,t] ∈ {0,1}` indicates whether city `i` is visited at time `t`
-
-**Constraints** (implemented as penalties):
-1. Each city visited exactly once: `∑_t x[i,t] = 1` for all cities `i`
-2. Each time slot has exactly one city: `∑_i x[i,t] = 1` for all times `t`
-
-**Objective Function**: Minimize total distance
-```
-minimize: ∑_{i,j,t} distance[i,j] × x[i,t] × x[j,t+1]
-```
-
-### Quantum Algorithms
-- **NumPyMinimumEigensolver**: Exact classical eigenvalue solver (for testing)
-- **QAOA** (Quantum Approximate Optimization Algorithm): Variational quantum algorithm for combinatorial optimization
-
----
-
-## Installation & Setup
-
-### 1. Clone the Repository
 ```bash
-git clone https://github.com/igorconrado/quantum_logistics_case10.git
-cd quantum_logistics_case10
+git clone https://github.com/igorconrado/quantum-logistics-case10.git
+cd quantum-logistics-case10
+python -m venv .venv
 ```
 
-### 2. Create Virtual Environment
+Activate the virtual environment and start the API:
+
 ```bash
-# Windows
-python -m venv venv
-venv\Scripts\activate
+# macOS/Linux
+source .venv/bin/activate
 
-# Linux/Mac
-python3 -m venv venv
-source venv/bin/activate
-```
+# Windows PowerShell
+# .\.venv\Scripts\Activate.ps1
 
-### 3. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Configure Environment Variables
-```bash
-# Copy the example file
-cp .env.example .env
-
-# Edit .env and add your OpenRouteService API key
-# Get a free key at: https://openrouteservice.org/dev/#/signup
-```
-
----
-
-## Usage
-
-### Start the Application
-```bash
+pip install -r requirements-dev.txt
 python server.py
 ```
 
-The application will start at `http://localhost:5000`
+The API starts at `http://localhost:5001`. In another terminal:
 
-Open your browser and navigate to: **http://localhost:5000**
-
-### Step-by-Step Guide
-
-#### Inter-City Mode (Between Capitals)
-1. Select **"Between Cities (Inter-municipal)"** in Route Scope
-2. Choose a **Depot City** (starting point)
-3. Select the number of **Additional Cities** to visit
-4. Choose **Algorithm Type** (Classical or Quantum)
-5. Click **"Load Inter-City Route"** to generate points
-6. (Optional) Enable **"Use Real Roads"** for actual road routing
-7. Click **"Calculate Optimized Route"**
-
-#### Intra-City Mode (Within City)
-1. Select **"Within City (Intra-municipal)"** in Route Scope
-2. Choose a **City** from the dropdown (São Paulo, Rio, etc.)
-3. Select the number of **Delivery Points**
-4. Choose **Algorithm Type**
-5. Click **"Generate Intra-City Route"**
-6. (Optional) Enable **"Use Real Roads"**
-7. Click **"Calculate Optimized Route"**
-
-### Real Roads Feature
-To enable real road routing:
-1. Get a free API key from [OpenRouteService](https://openrouteservice.org/dev/#/signup)
-2. Add your key to `.env` file: `ORS_API_KEY=your_key_here`
-3. Restart the server
-4. Check the checkbox **"Use Real Roads"** before calculating
-
----
-
-## Project Structure
-
-```
-quantum_logistics_case10/
-│
-├── LICENSE                     # MIT License
-├── README.md                   # This file
-├── requirements.txt            # Python dependencies
-├── server.py                   # Flask API server (entry point)
-├── .env.example                # Environment variables template
-├── .env                        # Environment variables (not in git)
-│
-├── backend/                    # Core logic modules
-│   ├── __init__.py
-│   ├── geo.py                  # Geospatial calculations
-│   │   ├── Location class
-│   │   ├── haversine() distance
-│   │   ├── DistanceMatrix class
-│   │   ├── SAO_PAULO_TEST_LOCATIONS
-│   │   ├── BRAZIL_CAPITALS_LOCATIONS
-│   │   └── CITIES_DATA (10 cities with neighborhoods)
-│   │
-│   ├── classic_solver.py       # Classical algorithms
-│   │   ├── solve_tsp_brute_force()
-│   │   ├── solve_tsp_nearest_neighbor()
-│   │   ├── solve_tsp_networkx()
-│   │   └── solve_classic()
-│   │
-│   ├── quantum_model.py        # QUBO formulation
-│   │   ├── build_tsp_qubo()
-│   │   └── qubo_to_dict()
-│   │
-│   ├── quantum_solver.py       # Quantum execution
-│   │   ├── solve_quantum()
-│   │   ├── decode_quantum_solution()
-│   │   └── calculate_route_distance()
-│   │
-│   └── routing.py              # Real roads routing (NEW)
-│       ├── get_real_route()
-│       ├── get_distance_matrix_real()
-│       ├── get_route_with_geometry()
-│       └── OpenRouteService API integration
-│
-├── static/                     # Static files (CSS, JS)
-│   ├── app.js                  # Frontend logic
-│   └── styles.css              # Application styles
-│
-├── templates/                  # HTML templates
-│   └── index.html              # Main application page
-│
-└── tests/                      # Test files
-    ├── test_api.py
-    ├── test_capitals.py
-    ├── test_depot_selection.py
-    ├── test_implementation.py
-    └── test_point_selection.py
+```bash
+cd frontend_base
+npm ci
+npm run dev
 ```
 
----
+Open `http://localhost:3000`. The local Next.js rewrite defaults to `http://localhost:5001`.
 
 ## Configuration
 
-### Environment Variables (.env)
+Copy `.env.example` to `.env` for the backend. The committed example contains no credentials.
+
+| Variable | Required | Description |
+| --- | --- | --- |
+| `HOST` | No | Flask bind host; defaults to `0.0.0.0` |
+| `PORT` | No | Flask port; defaults to `5001` |
+| `FLASK_DEBUG` | No | Local debug flag; disabled by default |
+| `LOG_LEVEL` | No | Python logging level |
+| `CORS_ALLOWED_ORIGINS` | Production | Comma-separated trusted frontend origins |
+| `ORS_API_KEY` | No | Enables OpenRouteService matrices and geometry |
+| `API_URL` | Frontend deployment | Server-side Flask API base URL |
+
+Without `ORS_API_KEY`, route costs use Haversine distances. API keys cannot be submitted through a public endpoint and must remain in the backend environment.
+
+## API
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/` | Service metadata and endpoint links |
+| `GET` | `/api/health` | Stable health response |
+| `GET` | `/api/solvers` | Solver capabilities and limits |
+| `GET` | `/api/brazil-capitals` | Dataset of 27 capitals |
+| `GET` | `/api/cities` | Supported intra-city datasets |
+| `GET` | `/api/city-neighborhoods/<key>` | Hub and sample locations |
+| `POST` | `/api/generate-route` | Generate a bounded sample instance |
+| `POST` | `/api/calculate` | Solve a validated TSP instance |
+| `GET` | `/api/routing-status` | OpenRouteService availability |
+
+Example request:
 
 ```bash
-# OpenRouteService API Key (required for Real Roads)
-ORS_API_KEY=your_api_key_here
-
-# Flask Configuration
-FLASK_ENV=development
-FLASK_DEBUG=1
-
-# Server Configuration
-HOST=0.0.0.0
-PORT=5000
+curl -X POST http://localhost:5001/api/calculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "solver": "nearest_neighbor",
+    "use_real_roads": false,
+    "locations": [
+      {"id": 0, "name": "São Paulo", "lat": -23.5505, "lon": -46.6333},
+      {"id": 1, "name": "Rio de Janeiro", "lat": -22.9068, "lon": -43.1729},
+      {"id": 2, "name": "Belo Horizonte", "lat": -19.9167, "lon": -43.9345}
+    ]
+  }'
 ```
 
-### Cost Parameters
-Based on Brazilian fuel costs (2026):
-- Gasoline price: R$ 6.35/liter
-- Average consumption: 10 km/liter
-- Cost per km: R$ 0.635/km
+## Quality gates
 
-### OpenRouteService API Limits
-- **Free tier**: 2,000 requests/day
-- **Matrix endpoint**: Max 50 locations per request
-- **Directions endpoint**: Max 50 waypoints per request
-
-### Quantum Simulation Limits
-
-**CRITICAL LIMITATION**: The quantum solver is limited to **4 points maximum** due to exponential RAM memory requirements.
-
-#### Why This Limitation Exists
-
-The `NumPyMinimumEigensolver` creates a Hamiltonian matrix in RAM memory with size **2^(n²) × 2^(n²)** elements, where **n** is the number of points.
-
-**RAM Memory Requirements:**
-
-| Points | Variables (n²) | Matrix Size (2^(n²)) | RAM Required | Feasible? |
-|--------|---------------|---------------------|--------------|-----------|
-| 3      | 9             | 512                 | ~4 KB        | ✓ Yes     |
-| 4      | 16            | 65,536              | ~512 KB      | ✓ Yes     |
-| 5      | 25            | 33,554,432          | ~256 MB      | ⚠️ Maybe   |
-| 6      | 36            | 68,719,476,736      | **~512 GB**  | ✗ No      |
-| 7      | 49            | 562,949,953,421,312 | ~4.5 PB      | ✗✗ No     |
-
-**This limitation does NOT apply to:**
-- Real quantum hardware (IBM Quantum, Rigetti, etc.) - uses physical qubits, not RAM simulation
-- Classical algorithms (can solve hundreds of points using NetworkX)
-
----
-
-## API Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | GET | Main application page |
-| `/api/test-data` | GET | Get São Paulo test locations |
-| `/api/brazil-capitals` | GET | Get Brazilian capitals data |
-| `/api/cities` | GET | Get all available cities |
-| `/api/city/<city_key>` | GET | Get specific city data |
-| `/api/generate-route` | POST | Generate random route points |
-| `/api/calculate` | POST | Calculate optimized route |
-| `/api/routing-status` | GET | Check Real Roads API status |
-| `/api/set-api-key` | POST | Set OpenRouteService API key |
-
----
-
-## Testing
-
-### Test Individual Modules
-
-**Test Geospatial Calculations:**
 ```bash
-python backend/geo.py
+# Backend
+python -m pytest -v
+
+# Reproducible small evaluation
+python -m benchmarks.evaluate --cities 3
+
+# Frontend
+cd frontend_base
+npm ci
+npm run lint
+npm run build
+npm audit
 ```
 
-**Test Classical Solver:**
-```bash
-python backend/classic_solver.py
+Tests use Flask's test client and mock OpenRouteService. They require no manually started server.
+
+The evaluation records its deterministic input selection, runtime context, solver, route cost, and execution time. Its timings compare implementations on one machine; they do not establish quantum advantage.
+
+## Deployment
+
+- `frontend_base/` is deployed as the `quantum-logistics-case10` Vercel project.
+- `api/index.py` exposes Flask as the separate `quantum-logistics-api` Vercel project.
+- Set frontend `API_URL=https://quantum-logistics-api.vercel.app`.
+- Set backend `CORS_ALLOWED_ORIGINS=https://quantum-logistics-case10.vercel.app`.
+- `railway.json` and `Procfile` remain valid alternatives for a Gunicorn deployment.
+
+No secrets belong in Git or in public frontend variables.
+
+## Technical limitations
+
+- The time-indexed QUBO formulation uses `n²` binary variables. Exact diagonalization grows exponentially and is bounded to four locations.
+- The API limits payload size and accepts at most 27 locations. Brute force is separately capped at eight.
+- Vercel functions have execution limits and are appropriate here only because requests are deliberately bounded.
+- OpenRouteService availability, quota, and road data are external dependencies.
+- No controlled scaling study, QAOA result, hardware quantum run, or quantum advantage is claimed.
+- The project is educational and experimental, not production-scale logistics software.
+
+## Repository structure
+
+```text
+api/                 Vercel Flask entry point
+backend/             Geospatial logic, routing client, QUBO, and solver strategies
+benchmarks/          Reproducible bounded evaluation
+frontend_base/       Next.js dashboard
+snapshots/           UI screenshots
+tests/               Assertion-based unit and API integration tests
+server.py            Flask application factory and local entry point
+requirements*.txt    Bounded Python runtime and development dependencies
 ```
 
-**Test QUBO Formulation:**
-```bash
-python backend/quantum_model.py
-```
+## References
 
-**Test Quantum Solver:**
-```bash
-cd backend && python quantum_solver.py
-```
+- Edward Farhi, Jeffrey Goldstone, and Sam Gutmann, [A Quantum Approximate Optimization Algorithm](https://arxiv.org/abs/1411.4028) (2014).
+- Danish Business Authority, [16 Danish Quantum Use Cases](https://erhvervsstyrelsen.dk/sites/default/files/2024-12/16%20Danish%20Quantum%20Use%20Cases%20-%20December%202024_0.pdf), including Case 10 on route planning by KPMG and TDC NET.
+- [Qiskit Optimization documentation](https://qiskit-community.github.io/qiskit-optimization/)
+- [OpenRouteService API documentation](https://openrouteservice.org/dev/#/api-docs)
 
-**Test Real Roads Routing:**
-```bash
-python backend/routing.py
-```
+## Author and license
 
-### Run All Tests
-```bash
-pytest test_*.py -v
-```
-
----
-
-## Performance Benchmarks
-
-| # Points | Classical (ms) | Quantum (ms) | RAM Required | Notes |
-|----------|---------------|--------------|--------------|-------|
-| 3        | ~0.02         | ~19          | ~4 KB        | Both optimal |
-| 4        | ~0.02         | ~61          | ~512 KB      | Both optimal |
-| 5        | ~0.15         | N/A*         | ~256 MB      | RAM limit |
-| 6        | ~1.20         | N/A*         | **~512 GB**  | RAM limit |
-| 8        | ~450          | N/A*         | ~2 EB        | RAM limit |
-| 10       | ~2100         | N/A*         | Impossible   | RAM limit |
-
-*Quantum solver limited to 4 points due to exponential RAM memory requirements (2^(n²) matrix elements)
-
----
-
-## References & Credits
-
-### Academic References
-1. **Hughes, C., et al.** - *Quantum Computing for the Quantum Curious* (2021)
-2. **Farhi, E., et al.** - *A Quantum Approximate Optimization Algorithm* (2014)
-3. **KPMG/TDC Net** - *Danish Quantum Cases* - Case 10: Logistics Optimization
-
-### Technologies
-- [Qiskit Documentation](https://qiskit.org/documentation/)
-- [Flask Documentation](https://flask.palletsprojects.com/)
-- [Leaflet.js Documentation](https://leafletjs.com/)
-- [NetworkX TSP Algorithms](https://networkx.org/documentation/stable/reference/algorithms/approximation.html)
-- [OpenRouteService API](https://openrouteservice.org/dev/#/api-docs)
-
-### Author
-**Igor Conrado**
-Email: [conradoigor78@gmail.com](mailto:conradoigor78@gmail.com)
-LinkedIn: [linkedin.com/in/igorconrado](https://www.linkedin.com/in/igorconrado/)
-GitHub: [github.com/igorconrado](https://github.com/igorconrado)
-
----
-
-## License
-
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
----
-
-## Future Enhancements
-
-- [ ] Multi-vehicle routing (mTSP)
-- [ ] Clustering-based vehicle assignment
-- [x] ~~Real-world traffic data integration~~ (Implemented with OpenRouteService)
-- [ ] QAOA hyperparameter optimization
-- [ ] Deployment to quantum hardware (IBM Quantum)
-- [ ] Time windows constraints
-- [ ] Vehicle capacity constraints
-- [ ] Export routes to GPS formats (GPX, KML)
-- [ ] Route history and comparison
-
----
-
-## Acknowledgments
-
-Special thanks to:
-- **KPMG** and **TDC Net** for the inspiring case study
-- **Qiskit Team** for the excellent quantum computing framework
-- **Flask** and **Leaflet** for making web development simple and powerful
-- **OpenRouteService** for the free routing API
-
----
-
-<div align="center">
-Made with quantum computing
-</div>
+[Igor Conrado](https://github.com/igorconrado) · [LinkedIn](https://www.linkedin.com/in/igorconrado/) · [MIT License](LICENSE)
 
 ## COBENGE demo regression checks
 
@@ -441,8 +194,8 @@ and keeps the first allowed points, preserving the origin and their order.
 
 The previous intracity selector treated a total-point limit as a neighborhood
 limit. It therefore generated 5 points for a quantum selection of 4 neighborhoods.
-The selected method was also missing from calculation requests; it is now sent
-to the backend and validated before either routing or optimization.
+The existing solver selection contract is preserved and capacity is validated
+before either routing or optimization.
 
 Two independent error paths produced misleading zero metrics: ORS matrix `null`
 entries were converted to zero-cost edges, and frontend request failures created
@@ -463,6 +216,7 @@ labeled as a straight-line estimate; there is no automatic distance fallback.
 Run offline regression checks from the repository root:
 
 ```sh
+python -m pytest -q
 python -m unittest test_capacity test_routing_regressions -v
 cd frontend_base
 npm ci
@@ -489,7 +243,7 @@ Manual validation (`python server.py` and `npm run dev` in separate terminals):
    null entries, malformed matrices, HTTP 401/403/429/500, timeout, missing key,
    geometry failure, delayed responses, stale responses, and HTTP-200 error bodies.
 
-Validation on 2026-09-16: 6 Python tests and 15 frontend tests passed, along with
+Validation on 2026-09-16: 21 existing Python tests, 6 new Python tests and 15 frontend tests passed, along with
 TypeScript and production build. Browser checks passed for both capacity limits,
 actual quantum and brute-force Haversine calculations, and missing-key failure.
 A live authenticated ORS success was not tested because this local environment

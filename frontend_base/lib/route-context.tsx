@@ -13,7 +13,6 @@ import {
 import {
   calculateRoute as apiCalculateRoute,
   getRoutingStatus,
-  setApiKey as apiSetApiKey,
   getCityNeighborhoods,
   type BackendLocation,
 } from "./api"
@@ -50,7 +49,6 @@ interface RouteContextType {
   clearHistory: () => void
   apiStatus: ApiStatus
   apiUsage: ApiUsageInfo
-  setApiKey: (key: string) => void
   calculateRoute: () => Promise<void>
   calculateComparison: () => Promise<void>
   clearResults: () => void
@@ -269,12 +267,13 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const locations = citiesToLocations(selectedCities)
-      const algorithm = config.algorithmType === "quantum" ? "quantum" : "classical"
+      const solver = config.algorithmType === "quantum"
+        ? "exact_eigensolver"
+        : config.classicalMethod
 
       const data = await apiCalculateRoute({
         locations,
-        algorithm,
-        method: config.algorithmType === "quantum" ? config.quantumMethod : config.classicalMethod,
+        solver,
         use_real_roads: config.useRealRoads,
       })
 
@@ -323,8 +322,8 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
       const useRealRoads = config.useRealRoads
 
       const [classicalData, quantumData] = await Promise.all([
-        apiCalculateRoute({ locations, algorithm: "classical", method: config.classicalMethod, use_real_roads: useRealRoads }),
-        apiCalculateRoute({ locations, algorithm: "quantum", method: config.quantumMethod, use_real_roads: useRealRoads }),
+        apiCalculateRoute({ locations, solver: "brute_force", use_real_roads: useRealRoads }),
+        apiCalculateRoute({ locations, solver: "exact_eigensolver", use_real_roads: useRealRoads }),
       ])
 
       if (requestRevision !== revision.current) return
@@ -362,15 +361,6 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
     setHistory([])
   }, [])
 
-  const setApiKeyHandler = useCallback(async (key: string) => {
-    try {
-      await apiSetApiKey(key)
-      setApiStatus((prev) => ({ ...prev, hasApiKey: true, online: true }))
-    } catch {
-      setApiStatus((prev) => ({ ...prev, hasApiKey: false }))
-    }
-  }, [])
-
   const apiUsage: ApiUsageInfo = { used, limit, remaining, percentUsed, isLow, isExhausted }
 
   const value: RouteContextType = {
@@ -398,7 +388,6 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
     clearHistory,
     apiStatus,
     apiUsage,
-    setApiKey: setApiKeyHandler,
     calculateRoute,
     calculateComparison,
     clearResults,

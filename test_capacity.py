@@ -31,7 +31,7 @@ class CapacityRegressions(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     generate_route('belo_horizonte', algorithm, limit, method)
                 response = self.client.post('/api/calculate', json={
-                    'locations': self.locations * limit, 'algorithm': algorithm, 'method': method
+                    'locations': self.locations * limit, 'solver': 'exact_eigensolver' if algorithm == 'quantum' else method
                 })
                 self.assertEqual(response.status_code, 400)
         with self.assertRaises(ValueError):

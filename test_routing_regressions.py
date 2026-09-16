@@ -59,7 +59,7 @@ class RoutingRegressions(unittest.TestCase):
             self.assertFalse(routing.get_distance_matrix_real(self.locations).success)
 
     def test_calculation_both_distance_modes_and_api_failure(self):
-        payload = {'locations': self.locations, 'algorithm': 'classical', 'method': 'brute_force'}
+        payload = {'locations': self.locations, 'solver': 'brute_force'}
         straight = self.client.post('/api/calculate', json=payload).get_json()
         self.assertTrue(straight['success'])
         self.assertGreater(straight['total_distance'], 0)

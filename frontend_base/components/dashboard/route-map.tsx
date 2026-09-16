@@ -14,6 +14,7 @@ import {
 import { useRoute } from "@/lib/route-context"
 import { useTranslation } from "@/lib/i18n"
 import type { City } from "@/lib/types"
+import type { Map as LeafletMap } from "leaflet"
 import { ALGORITHM_LIMITS } from "@/lib/types"
 
 const MapContainer = dynamic(
@@ -98,7 +99,7 @@ export function RouteMap() {
   const [mapReady, setMapReady] = useState(false)
   const [mapStyle, setMapStyle] = useState<"default" | "satellite">("default")
   const [clickToAddEnabled, setClickToAddEnabled] = useState(false)
-  const mapRef = useRef<any>(null)
+  const mapRef = useRef<LeafletMap | null>(null)
 
   const currentLimit = config.algorithmType === "quantum"
     ? ALGORITHM_LIMITS[config.quantumMethod]

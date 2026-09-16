@@ -3,10 +3,9 @@ import React from "react"
 import { act, renderHook } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { RouteProvider, useRoute } from "./route-context"
-import { calculateRoute, getCityNeighborhoods } from "./api"
-import { generationLimit, normalizeConfig, pointLimit } from "./capacity"
+import { calculateRoute } from "./api"
 import { parseApiResult } from "./route-result"
-import { BRAZIL_CAPITALS, type RouteConfig } from "./types"
+import { BRAZIL_CAPITALS } from "./types"
 
 vi.mock("./api", () => ({
   calculateRoute: vi.fn(),
@@ -16,11 +15,7 @@ vi.mock("./api", () => ({
 }))
 vi.mock("./use-api-usage", () => ({ useApiUsage: () => ({ incrementUsage: vi.fn() }) }))
 
-const config: RouteConfig = {
-  mode: "intracidade", selectedCity: "belo_horizonte", algorithmType: "quantum",
-  quantumMethod: "quantum_numpy", classicalMethod: "brute_force", numPoints: 8, useRealRoads: false,
-}
-const response = { success: true, route: [0, 1, 0], total_distance: 0.25, time_ms: 0.15, method: "brute_force", used_real_roads: true }
+const response = { solver: "brute_force", solver_label: "Exact brute force", execution: "classical" as const, success: true, route: [0, 1, 0], total_distance: 0.25, time_ms: 0.15, method: "brute_force", used_real_roads: true }
 const wrapper = ({ children }: { children: React.ReactNode }) => <RouteProvider>{children}</RouteProvider>
 
 beforeEach(() => { vi.clearAllMocks() })
@@ -57,7 +52,7 @@ describe("routing results", () => {
     expect(result.current.results?.totalDistance).toBe(0.25)
     expect(result.current.results?.usedRealRoads).toBe(realRoads)
     expect(result.current.history).toHaveLength(1)
-    expect(calculateRoute).toHaveBeenCalledWith(expect.objectContaining({ method: "brute_force", use_real_roads: realRoads }))
+    expect(calculateRoute).toHaveBeenCalledWith(expect.objectContaining({ solver: "brute_force", use_real_roads: realRoads }))
   })
   it("discards a result when configuration changes during the request", async () => {
     const { result } = renderHook(useRoute, { wrapper })
