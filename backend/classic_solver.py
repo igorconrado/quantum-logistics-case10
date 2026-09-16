@@ -7,6 +7,8 @@ Implementa algoritmos clássicos de otimização de rotas:
 - Algoritmo de NetworkX (Christofides)
 """
 
+from backend.capacity import ALGORITHM_LIMITS
+
 import itertools
 import numpy as np
 import networkx as nx
@@ -35,6 +37,9 @@ def solve_tsp_brute_force(distance_matrix: np.ndarray) -> Dict:
             "method": "brute_force",
             "time_ms": 0.0
         }
+
+    if n > ALGORITHM_LIMITS["brute_force"]:
+        raise ValueError("Brute force limited to 8 total points, including the origin")
 
     # Gerar todas as permutações (excluindo o depósito que é fixo)
     cities = list(range(1, n))
@@ -185,7 +190,7 @@ def solve_classic(distance_matrix: np.ndarray, force_method: str = None) -> Dict
             return solve_tsp_networkx(distance_matrix)
 
     # Escolher automaticamente o melhor método baseado no tamanho
-    if n <= 8:
+    if n <= ALGORITHM_LIMITS["brute_force"]:
         # Para 8 ou menos cidades, brute force é viável e garante solução ótima
         return solve_tsp_brute_force(distance_matrix)
     else:

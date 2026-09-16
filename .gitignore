@@ -91,3 +91,10 @@ CLAUDE.md
 
 # Windows artifacts
 nul
+
+# Local agent files and test artifacts
+.Codex/
+AGENTS.md
+*.tsbuildinfo
+.pytest_cache/
+coverage/

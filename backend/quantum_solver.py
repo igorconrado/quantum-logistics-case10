@@ -5,6 +5,8 @@ Executa a otimização quântica usando o problema QUBO formulado.
 Usa simulador Qiskit Aer localmente.
 """
 
+from backend.capacity import ALGORITHM_LIMITS
+
 import numpy as np
 import time
 from typing import Dict, List
@@ -89,7 +91,7 @@ def solve_quantum(distance_matrix: np.ndarray, use_exact: bool = True) -> Dict:
     # Para n=5: 2^25 = 33M elementos (~256MB RAM teórico, mas Qiskit usa mais!)
     # Para n=6: 2^36 = 68B elementos (~512GB RAM) - IMPOSSÍVEL!
     # NOTA: Na prática, 5 pontos tentou alocar 7.5GB e crashou o servidor
-    if n > 4:
+    if n > ALGORITHM_LIMITS["quantum_numpy"]:
         elapsed_time = (time.time() - start_time) * 1000
         return {
             "route": [],

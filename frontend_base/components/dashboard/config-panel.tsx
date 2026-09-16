@@ -50,6 +50,8 @@ import { useTranslation } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import { ALGORITHM_LIMITS, BRAZIL_CAPITALS } from "@/lib/types"
 
+import { pointLimit, generationLimit } from "@/lib/capacity"
+
 export function ConfigPanel() {
   const {
     selectedCities,
@@ -71,9 +73,8 @@ export function ConfigPanel() {
   const [addCityOpen, setAddCityOpen] = useState(false)
   const [compareDialogOpen, setCompareDialogOpen] = useState(false)
 
-  const currentLimit = config.algorithmType === "quantum"
-    ? ALGORITHM_LIMITS[config.quantumMethod]
-    : ALGORITHM_LIMITS[config.classicalMethod]
+  const currentLimit = pointLimit(config)
+  const maxGenerated = generationLimit(config)
 
   const isOverLimit = selectedCities.length > currentLimit
 
@@ -218,7 +219,7 @@ export function ConfigPanel() {
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4}>
                 <SelectItem value="brute_force">
-                  {t("algo.brute_force")} (max 8)
+                  {t("algo.brute_force")} (max {ALGORITHM_LIMITS.brute_force})
                 </SelectItem>
                 <SelectItem value="nearest_neighbor">
                   {t("algo.nearest_neighbor")}
@@ -314,14 +315,14 @@ export function ConfigPanel() {
           <div className="flex items-center justify-between mb-3">
             <Label className="text-xs text-muted-foreground">{t("config.numNeighborhoods")}</Label>
             <Select
-              value={String(Math.min(config.numPoints, currentLimit))}
+              value={String(Math.min(config.numPoints, maxGenerated))}
               onValueChange={(v) => updateConfig({ numPoints: Number(v) })}
             >
               <SelectTrigger className="w-20 bg-secondary/50 border-border h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4}>
-                {[3, 4, 5, 6, 7, 8, 9, 10].filter((n) => n <= currentLimit).map((n) => (
+                {[2, 3, 4, 5, 6, 7, 8, 9, 10].filter((n) => n <= maxGenerated).map((n) => (
                   <SelectItem key={n} value={String(n)}>{n}</SelectItem>
                 ))}
               </SelectContent>
@@ -333,7 +334,7 @@ export function ConfigPanel() {
           <div className="flex items-center justify-between mb-3">
             <Label className="text-xs text-muted-foreground">{t("config.waypoints")}</Label>
             <Select
-              value={String(Math.min(config.numPoints, currentLimit))}
+              value={String(Math.min(config.numPoints, maxGenerated))}
               onValueChange={(v) => updateConfig({ numPoints: Number(v) })}
             >
               <SelectTrigger className="w-20 bg-secondary/50 border-border h-8 text-xs">

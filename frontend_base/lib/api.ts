@@ -10,6 +10,7 @@ interface BackendLocation {
 interface CalculateRequest {
   locations: BackendLocation[]
   algorithm: "classical" | "quantum"
+  method?: string
   use_real_roads: boolean
 }
 

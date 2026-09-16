@@ -17,6 +17,7 @@ from backend.geo import (
     CITIES_DATA, generate_route, get_city_by_index
 )
 from backend.classic_solver import solve_classic
+from backend.capacity import validate_capacity
 from backend.quantum_solver import solve_quantum
 from backend.routing import (
     get_distance_matrix_real,
@@ -148,7 +149,7 @@ def generate_route_endpoint():
             }), 400
 
         # Generate route using the business logic
-        route = generate_route(city_key, algorithm, num_points)
+        route = generate_route(city_key, algorithm, num_points, data.get("method"))
 
         # Convert to JSON format
         locations_data = []
@@ -197,11 +198,10 @@ def calculate_route():
                 'error': 'At least 2 locations required'
             }), 400
 
-        if algorithm == 'quantum' and len(locations_data) > 4:
-            return jsonify({
-                'success': False,
-                'error': 'Quantum mode limited to 4 points due to exponential RAM memory growth (2^(n²))'
-            }), 400
+        try:
+            method = validate_capacity(algorithm, data.get('method'), len(locations_data))
+        except ValueError as error:
+            return jsonify(success=False, error=str(error)), 400
 
         # Check if real roads requested but API not configured
         if use_real_roads and not is_api_key_configured():
@@ -242,9 +242,9 @@ def calculate_route():
 
         # Solve based on algorithm
         if algorithm == 'classical':
-            result = solve_classic(dm_matrix)
+            result = solve_classic(dm_matrix, force_method=data.get("method"))
         elif algorithm == 'quantum':
-            result = solve_quantum(dm_matrix, use_exact=True)
+            result = solve_quantum(dm_matrix, use_exact=method == "quantum_numpy")
         else:
             return jsonify({
                 'success': False,

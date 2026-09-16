@@ -1,3 +1,5 @@
+import ALGORITHM_LIMITS from "./algorithm-limits.json"
+
 // Brazilian Capital Cities Data
 export interface City {
   id: string
@@ -109,13 +111,7 @@ export const BRAZIL_CAPITALS: City[] = [
   { id: 'palmas', key: 'palmas', name: 'Palmas', state: 'TO', lat: -10.1689, lng: -48.3317 },
 ]
 
-export const ALGORITHM_LIMITS: Record<string, number> = {
-  brute_force: 8,
-  nearest_neighbor: 50,
-  networkx: 50,
-  quantum_numpy: 4,
-  quantum_qaoa: 4,
-}
+export { ALGORITHM_LIMITS }
 
 export const ALGORITHM_LABELS: Record<string, string> = {
   brute_force: 'Brute Force',
@@ -194,8 +190,8 @@ export function nearestNeighborTSP(distMatrix: number[][]): { route: number[]; d
 // Brute force TSP (for small inputs)
 export function bruteForceTSP(distMatrix: number[][]): { route: number[]; distance: number } {
   const n = distMatrix.length
-  if (n > 8) {
-    return nearestNeighborTSP(distMatrix) // Fallback for large inputs
+  if (n > ALGORITHM_LIMITS.brute_force) {
+    throw new Error(`Brute force limited to ${ALGORITHM_LIMITS.brute_force} total points`)
   }
 
   const permute = (arr: number[]): number[][] => {

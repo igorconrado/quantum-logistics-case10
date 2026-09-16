@@ -585,7 +585,7 @@ for _idx, (_key, _name, _locs) in enumerate(_ALL_CITIES):
 # FUNÇÕES DE GERAÇÃO DE ROTAS
 # ============================================================================
 
-def generate_route(city_key: str, algorithm_type: str, num_points: int) -> List[Location]:
+def generate_route(city_key: str, algorithm_type: str, num_points: int, method: str = None) -> List[Location]:
     """
     Gera uma rota para cálculo de TSP com base nos parâmetros fornecidos.
 
@@ -613,13 +613,8 @@ def generate_route(city_key: str, algorithm_type: str, num_points: int) -> List[
     if algorithm_type not in ["classical", "quantum"]:
         raise ValueError(f"Tipo de algoritmo inválido: {algorithm_type}. Use 'classical' ou 'quantum'")
 
-    # Limites de pontos baseados no algoritmo
-    if algorithm_type == "quantum":
-        if num_points < 1 or num_points > 3:
-            raise ValueError(f"Quantum: número de pontos deve estar entre 1 e 3 (você escolheu {num_points})")
-    else:  # classical
-        if num_points < 1 or num_points > 9:
-            raise ValueError(f"Classical: número de pontos deve estar entre 1 e 9 (você escolheu {num_points})")
+    from backend.capacity import validate_capacity
+    validate_capacity(algorithm_type, method, num_points + 1)
 
     # Obter dados da cidade
     city_data = CITIES_DATA[city_key]
@@ -627,6 +622,8 @@ def generate_route(city_key: str, algorithm_type: str, num_points: int) -> List[
     neighborhoods = city_data["neighborhoods"]
 
     # Selecionar aleatoriamente N bairros
+    if num_points > len(neighborhoods):
+        raise ValueError("Not enough neighborhoods available")
     selected_neighborhoods = random.sample(neighborhoods, num_points)
 
     # Montar rota: Hub sempre primeiro + bairros selecionados

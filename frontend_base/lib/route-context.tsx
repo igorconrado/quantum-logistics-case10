@@ -20,6 +20,8 @@ import {
 } from "./api"
 import { useApiUsage } from "./use-api-usage"
 
+import { pointLimit, generationLimit, normalizeConfig } from "./capacity"
+
 interface ApiUsageInfo {
   used: number
   limit: number
@@ -123,10 +125,10 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
   )
 
   const addCity = useCallback((city: City) => {
-    setSelectedCities((prev) => [...prev, { ...city, isHub: false }])
+    setSelectedCities((prev) => prev.length < pointLimit(config) ? [...prev, { ...city, isHub: prev.length === 0 }] : prev)
     setResults(null)
     setComparison({ quantum: null, classical: null })
-  }, [])
+  }, [config])
 
   const addCustomCity = useCallback((lat: number, lng: number, name?: string) => {
     const customCity: City = {
@@ -138,10 +140,10 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
       lng,
       isHub: selectedCities.length === 0,
     }
-    setSelectedCities((prev) => [...prev, customCity])
+    setSelectedCities((prev) => prev.length < pointLimit(config) ? [...prev, customCity] : prev)
     setResults(null)
     setComparison({ quantum: null, classical: null })
-  }, [selectedCities.length])
+  }, [selectedCities.length, config])
 
   const removeCity = useCallback((cityId: string) => {
     setSelectedCities((prev) => {
@@ -167,18 +169,20 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const updateConfig = useCallback((updates: Partial<RouteConfig>) => {
-    setConfig((prev) => ({ ...prev, ...updates }))
+    const next = normalizeConfig({ ...config, ...updates })
+    setConfig(next)
+    setSelectedCities((cities) => cities.slice(0, pointLimit(next)))
     setResults(null)
     setComparison({ quantum: null, classical: null })
-  }, [])
+  }, [config])
 
   const generateRandomPoints = useCallback((count: number) => {
     const shuffled = [...BRAZIL_CAPITALS].sort(() => Math.random() - 0.5)
-    const selected = shuffled.slice(0, Math.min(count, BRAZIL_CAPITALS.length))
+    const selected = shuffled.slice(0, Math.min(count, BRAZIL_CAPITALS.length, pointLimit(config)))
     setSelectedCities(selected.map((c, i) => ({ ...c, isHub: i === 0 })))
     setResults(null)
     setComparison({ quantum: null, classical: null })
-  }, [])
+  }, [config])
 
   const loadPoints = useCallback(async () => {
     setIsLoadingPoints(true)
@@ -188,7 +192,7 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
     try {
       if (config.mode === "intercities") {
         const shuffled = [...BRAZIL_CAPITALS].sort(() => Math.random() - 0.5)
-        const selected = shuffled.slice(0, Math.min(config.numPoints, BRAZIL_CAPITALS.length))
+        const selected = shuffled.slice(0, Math.min(config.numPoints, BRAZIL_CAPITALS.length, generationLimit(config)))
         setSelectedCities(selected.map((c, i) => ({ ...c, isHub: i === 0 })))
       } else if (config.mode === "intracidade" && config.selectedCity) {
         const data = await getCityNeighborhoods(config.selectedCity)
@@ -202,7 +206,7 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
             lng: data.hub.lon,
             isHub: true,
           },
-          ...data.neighborhoods.slice(0, config.numPoints).map((n) => ({
+          ...data.neighborhoods.slice(0, Math.min(config.numPoints, generationLimit(config))).map((n) => ({
             id: `${config.selectedCity}_${n.id}`,
             key: config.selectedCity!,
             name: n.name,
@@ -219,7 +223,7 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoadingPoints(false)
     }
-  }, [config.mode, config.selectedCity, config.numPoints])
+  }, [config])
 
   const addToHistory = useCallback(
     (result: RouteResult) => {
@@ -262,6 +266,7 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
       const data = await apiCalculateRoute({
         locations,
         algorithm,
+        method: config.algorithmType === "quantum" ? config.quantumMethod : config.classicalMethod,
         use_real_roads: config.useRealRoads,
       })
 
@@ -309,8 +314,8 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
       const useRealRoads = config.useRealRoads
 
       const [classicalData, quantumData] = await Promise.all([
-        apiCalculateRoute({ locations, algorithm: "classical", use_real_roads: useRealRoads }),
-        apiCalculateRoute({ locations, algorithm: "quantum", use_real_roads: useRealRoads }),
+        apiCalculateRoute({ locations, algorithm: "classical", method: config.classicalMethod, use_real_roads: useRealRoads }),
+        apiCalculateRoute({ locations, algorithm: "quantum", method: config.quantumMethod, use_real_roads: useRealRoads }),
       ])
 
       const classicalResult = parseApiResult(classicalData, selectedCities, config)
