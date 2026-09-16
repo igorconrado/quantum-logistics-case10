@@ -3,6 +3,8 @@ Flask Server for Quantum Logistics
 Provides REST API endpoints for the HTML/CSS/JS frontend
 """
 
+import math
+
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -203,6 +205,13 @@ def calculate_route():
         except ValueError as error:
             return jsonify(success=False, error=str(error)), 400
 
+        for location in locations_data:
+            lat, lon = location.get('lat'), location.get('lon')
+            if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)) or not (
+                math.isfinite(lat) and math.isfinite(lon) and -90 <= lat <= 90 and -180 <= lon <= 180
+            ):
+                return jsonify(success=False, error="Coordenadas inválidas"), 400
+
         # Check if real roads requested but API not configured
         if use_real_roads and not is_api_key_configured():
             return jsonify({
@@ -258,6 +267,9 @@ def calculate_route():
                 'error': result.get('error', 'Optimization failed')
             }), 500
 
+        if not math.isfinite(result['total_distance']) or result['total_distance'] <= 0:
+            return jsonify(success=False, error="Distância da rota indisponível"), 502
+
         # Get route geometry if using real roads
         route_geometry = None
         total_duration = None
@@ -272,7 +284,7 @@ def calculate_route():
                 # Use the real route distance (may differ slightly from matrix sum)
                 # result['total_distance'] = route_result.distance_km
             else:
-                print(f"[SERVER] Warning: Could not get route geometry: {route_result.error}")
+                return jsonify(success=False, error=f"Falha ao obter geometria da rota: {route_result.error}"), 502
 
         # Calculate total duration from matrix if available
         if duration_matrix is not None and total_duration is None:
@@ -286,6 +298,7 @@ def calculate_route():
             'success': True,
             'route': result['route'],
             'total_distance': float(result['total_distance']),
+            'distance_matrix': dm_matrix.tolist(),
             'time_ms': float(result['time_ms']),
             'method': result['method'],
             'used_real_roads': use_real_roads

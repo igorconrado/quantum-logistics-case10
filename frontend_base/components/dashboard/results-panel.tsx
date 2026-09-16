@@ -27,7 +27,7 @@ import { useTranslation } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
 export function ResultsPanel() {
-  const { results, comparison, history, clearHistory, config } = useRoute()
+  const { results, comparison, history, clearHistory, config, error, isCalculating } = useRoute()
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState("results")
 
@@ -49,7 +49,11 @@ export function ResultsPanel() {
 
         <TabsContent value="results" className="flex-1 overflow-y-auto m-0 p-4 pt-2">
           <AnimatePresence mode="wait">
-            {results ? (
+            {isCalculating ? (
+              <div key="loading" role="status" className="p-4 text-sm text-muted-foreground">{t("config.calculating")}</div>
+            ) : error ? (
+              <div key="error" role="alert" className="p-4 text-sm text-error">{error}</div>
+            ) : results?.success ? (
               <motion.div
                 key="results"
                 initial={{ opacity: 0, y: 20 }}
@@ -58,11 +62,11 @@ export function ResultsPanel() {
                 className="space-y-4"
               >
                 <div className="grid grid-cols-2 gap-3">
-                  <MetricCard icon={Route} label={t("results.totalDistance")} value={`${results.totalDistance.toLocaleString()}`} unit="km" color="neon" />
-                  <MetricCard icon={Fuel} label={t("results.fuelCost")} value={`R$ ${results.fuelCost?.toLocaleString()}`} color="coral" />
+                  <MetricCard icon={Route} label={t("results.totalDistance")} value={`${results.totalDistance.toLocaleString(undefined, { maximumSignificantDigits: 6 })}`} unit="km" color="neon" />
+                  <MetricCard icon={Fuel} label={t("results.fuelCost")} value={`R$ ${results.fuelCost?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} color="coral" />
                   <MetricCard icon={Clock} label={t("results.calcTime")} value={results.timeMs < 1 ? results.timeMs.toFixed(3) : results.timeMs.toFixed(2)} unit="ms" color="quantum" />
                   {results.totalDurationMin && (
-                    <MetricCard icon={Activity} label={t("results.driveTime")} value={`${Math.floor(results.totalDurationMin / 60)}h ${results.totalDurationMin % 60}m`} color="muted" />
+                    <MetricCard icon={Activity} label={t("results.driveTime")} value={`${Math.floor(results.totalDurationMin / 60)}h ${Math.round(results.totalDurationMin % 60)}m`} color="muted" />
                   )}
                 </div>
 

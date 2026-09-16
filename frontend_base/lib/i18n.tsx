@@ -67,7 +67,7 @@ const dictionaries: Record<Locale, Record<string, string>> = {
     "results.method": "Método",
     "results.roads": "Estradas",
     "results.realRoads": "Reais",
-    "results.haversine": "Haversine",
+    "results.haversine": "Haversine (estimativa em linha reta)",
     "results.optimizedSequence": "Sequência Otimizada",
     "results.exportCsv": "Exportar CSV",
     "results.print": "Imprimir",
@@ -120,6 +120,7 @@ const dictionaries: Record<Locale, Record<string, string>> = {
     "nav.history": "Histórico",
 
     // Distance Matrix
+    "matrix.awaitRoads": "Calcule a rota para carregar a matriz de estradas reais.",
     "matrix.title": "Matriz de Distâncias (km)",
     "matrix.emptyTitle": "Matriz de Distâncias",
     "matrix.emptyState": "Adicione pelo menos 2 cidades para visualizar as distâncias entre os pontos.",
@@ -241,7 +242,7 @@ const dictionaries: Record<Locale, Record<string, string>> = {
     "results.method": "Method",
     "results.roads": "Roads",
     "results.realRoads": "Real",
-    "results.haversine": "Haversine",
+    "results.haversine": "Haversine (straight-line estimate)",
     "results.optimizedSequence": "Optimized Sequence",
     "results.exportCsv": "Export CSV",
     "results.print": "Print",
@@ -294,6 +295,7 @@ const dictionaries: Record<Locale, Record<string, string>> = {
     "nav.history": "History",
 
     // Distance Matrix
+    "matrix.awaitRoads": "Calculate the route to load the real-road matrix.",
     "matrix.title": "Distance Matrix (km)",
     "matrix.emptyTitle": "Distance Matrix",
     "matrix.emptyState": "Add at least 2 cities to view distances between points.",

@@ -45,6 +45,7 @@ export interface RouteConfig {
 export interface RouteResult {
   success: boolean
   route: number[]
+  distanceMatrix?: number[][]
   totalDistance: number
   timeMs: number
   method: string

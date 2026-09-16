@@ -17,6 +17,7 @@ interface CalculateRequest {
 interface CalculateResponse {
   success: boolean
   route: number[]
+  distance_matrix?: number[][]
   total_distance: number
   time_ms: number
   method: string
@@ -74,7 +75,9 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     const body = await res.json().catch(() => ({ error: res.statusText }))
     throw new Error(body.error || `API error: ${res.status}`)
   }
-  return res.json()
+  const data = await res.json()
+  if (data.success === false) throw new Error(data.error || "Falha no cálculo da rota")
+  return data
 }
 
 export async function calculateRoute(req: CalculateRequest): Promise<CalculateResponse> {

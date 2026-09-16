@@ -9,13 +9,19 @@ import { generateDistanceMatrix } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 export function DistanceMatrix() {
-  const { selectedCities } = useRoute()
+  const { selectedCities, config, results, error, isCalculating } = useRoute()
   const { t } = useTranslation()
 
   const matrix = useMemo(() => {
     if (selectedCities.length < 2) return null
-    return generateDistanceMatrix(selectedCities)
-  }, [selectedCities])
+    return config.useRealRoads ? results?.distanceMatrix ?? null : generateDistanceMatrix(selectedCities)
+  }, [selectedCities, config.useRealRoads, results])
+
+  if (config.useRealRoads && !matrix && selectedCities.length >= 2) {
+    return <p role={error ? "alert" : "status"} className="p-4 text-sm text-muted-foreground">
+      {error || (isCalculating ? t("config.calculating") : t("matrix.awaitRoads"))}
+    </p>
+  }
 
   if (!matrix || selectedCities.length < 2) {
     return (
@@ -52,7 +58,7 @@ export function DistanceMatrix() {
   return (
     <div className="p-4">
       <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-        {t("matrix.title")}
+        {t("matrix.title")} — {config.useRealRoads ? t("results.realRoads") : t("results.haversine")}
       </h4>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
@@ -72,7 +78,7 @@ export function DistanceMatrix() {
                 <td className="p-1 text-muted-foreground whitespace-nowrap" title={rowCity.name}>{rowCity.name.substring(0, 3)}</td>
                 {matrix[i].map((distance, j) => (
                   <td key={`${i}-${j}`} className={cn("p-1 text-center font-mono rounded transition-colors", getHeatColor(distance))}>
-                    {distance === 0 ? "-" : Math.round(distance)}
+                    {distance === 0 ? "-" : distance.toLocaleString(undefined, { maximumSignificantDigits: 5 })}
                   </td>
                 ))}
               </motion.tr>
