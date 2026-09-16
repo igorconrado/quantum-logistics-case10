@@ -1,0 +1,6 @@
+{
+  "brute_force": 8,
+  "nearest_neighbor": 27,
+  "networkx": 27,
+  "quantum_numpy": 4
+}

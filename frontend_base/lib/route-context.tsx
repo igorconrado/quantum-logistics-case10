@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react"
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from "react"
 import {
   City,
   RouteResult,
@@ -9,7 +9,6 @@ import {
   CalculationHistory,
   ApiStatus,
   BRAZIL_CAPITALS,
-  COST_PER_KM,
 } from "./types"
 import {
   calculateRoute as apiCalculateRoute,
@@ -18,6 +17,9 @@ import {
   type BackendLocation,
 } from "./api"
 import { useApiUsage } from "./use-api-usage"
+
+import { pointLimit, generationLimit, normalizeConfig } from "./capacity"
+import { parseApiResult } from "./route-result"
 
 interface ApiUsageInfo {
   used: number
@@ -38,6 +40,7 @@ interface RouteContextType {
   setSelectedCities: (cities: City[]) => void
   config: RouteConfig
   updateConfig: (updates: Partial<RouteConfig>) => void
+  error: string | null
   results: RouteResult | null
   comparison: ComparisonResult
   isCalculating: boolean
@@ -65,25 +68,6 @@ function citiesToLocations(cities: City[]): BackendLocation[] {
   }))
 }
 
-function parseApiResult(
-  data: Awaited<ReturnType<typeof apiCalculateRoute>>,
-  cities: City[],
-): RouteResult {
-  const sequence = data.route.map((idx) => cities[idx % cities.length])
-  return {
-    success: data.success,
-    route: data.route,
-    totalDistance: Math.round(data.total_distance),
-    timeMs: data.time_ms,
-    method: data.method,
-    usedRealRoads: data.used_real_roads,
-    totalDurationMin: data.total_duration_min ? Math.round(data.total_duration_min) : undefined,
-    routeGeometry: data.route_geometry,
-    fuelCost: Math.round(data.total_distance * COST_PER_KM),
-    sequence,
-  }
-}
-
 export function RouteProvider({ children }: { children: React.ReactNode }) {
   const [selectedCities, setSelectedCities] = useState<City[]>([])
   const [config, setConfig] = useState<RouteConfig>({
@@ -95,6 +79,8 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
     useRealRoads: false,
     numPoints: 4,
   })
+  const [error, setError] = useState<string | null>(null)
+  const revision = useRef(0)
   const [results, setResults] = useState<RouteResult | null>(null)
   const [comparison, setComparison] = useState<ComparisonResult>({ classical: null, quantum: null })
   const [isCalculating, setIsCalculating] = useState(false)
@@ -120,10 +106,12 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
   )
 
   const addCity = useCallback((city: City) => {
-    setSelectedCities((prev) => [...prev, { ...city, isHub: false }])
+    setSelectedCities((prev) => prev.length < pointLimit(config) ? [...prev, { ...city, isHub: prev.length === 0 }] : prev)
+    revision.current += 1
+    setError(null)
     setResults(null)
     setComparison({ quantum: null, classical: null })
-  }, [])
+  }, [config])
 
   const addCustomCity = useCallback((lat: number, lng: number, name?: string) => {
     const customCity: City = {
@@ -135,10 +123,12 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
       lng,
       isHub: selectedCities.length === 0,
     }
-    setSelectedCities((prev) => [...prev, customCity])
+    setSelectedCities((prev) => prev.length < pointLimit(config) ? [...prev, customCity] : prev)
+    revision.current += 1
+    setError(null)
     setResults(null)
     setComparison({ quantum: null, classical: null })
-  }, [selectedCities.length])
+  }, [selectedCities.length, config])
 
   const removeCity = useCallback((cityId: string) => {
     setSelectedCities((prev) => {
@@ -148,6 +138,8 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
       }
       return filtered
     })
+    revision.current += 1
+    setError(null)
     setResults(null)
     setComparison({ quantum: null, classical: null })
   }, [])
@@ -159,36 +151,48 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
       result.splice(endIndex, 0, removed)
       return result.map((c, i) => ({ ...c, isHub: i === 0 }))
     })
+    revision.current += 1
+    setError(null)
     setResults(null)
     setComparison({ quantum: null, classical: null })
   }, [])
 
   const updateConfig = useCallback((updates: Partial<RouteConfig>) => {
-    setConfig((prev) => ({ ...prev, ...updates }))
+    const next = normalizeConfig({ ...config, ...updates })
+    setConfig(next)
+    setSelectedCities((cities) => cities.slice(0, pointLimit(next)))
+    revision.current += 1
+    setError(null)
     setResults(null)
     setComparison({ quantum: null, classical: null })
-  }, [])
+  }, [config])
 
   const generateRandomPoints = useCallback((count: number) => {
     const shuffled = [...BRAZIL_CAPITALS].sort(() => Math.random() - 0.5)
-    const selected = shuffled.slice(0, Math.min(count, BRAZIL_CAPITALS.length))
+    const selected = shuffled.slice(0, Math.min(count, BRAZIL_CAPITALS.length, pointLimit(config)))
     setSelectedCities(selected.map((c, i) => ({ ...c, isHub: i === 0 })))
+    revision.current += 1
+    setError(null)
     setResults(null)
     setComparison({ quantum: null, classical: null })
-  }, [])
+  }, [config])
 
   const loadPoints = useCallback(async () => {
     setIsLoadingPoints(true)
+    revision.current += 1
+    setError(null)
     setResults(null)
     setComparison({ quantum: null, classical: null })
 
+    const requestRevision = revision.current
     try {
       if (config.mode === "intercities") {
         const shuffled = [...BRAZIL_CAPITALS].sort(() => Math.random() - 0.5)
-        const selected = shuffled.slice(0, Math.min(config.numPoints, BRAZIL_CAPITALS.length))
+        const selected = shuffled.slice(0, Math.min(config.numPoints, BRAZIL_CAPITALS.length, generationLimit(config)))
         setSelectedCities(selected.map((c, i) => ({ ...c, isHub: i === 0 })))
       } else if (config.mode === "intracidade" && config.selectedCity) {
         const data = await getCityNeighborhoods(config.selectedCity)
+        if (requestRevision !== revision.current) return
         const cities: City[] = [
           {
             id: `${config.selectedCity}_hub`,
@@ -199,7 +203,7 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
             lng: data.hub.lon,
             isHub: true,
           },
-          ...data.neighborhoods.slice(0, config.numPoints).map((n) => ({
+          ...data.neighborhoods.slice(0, Math.min(config.numPoints, generationLimit(config))).map((n) => ({
             id: `${config.selectedCity}_${n.id}`,
             key: config.selectedCity!,
             name: n.name,
@@ -212,11 +216,12 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
         setSelectedCities(cities)
       }
     } catch (err) {
+      if (requestRevision === revision.current) setError(err instanceof Error ? err.message : "Falha ao carregar pontos")
       console.error("Failed to load points:", err)
     } finally {
       setIsLoadingPoints(false)
     }
-  }, [config.mode, config.selectedCity, config.numPoints])
+  }, [config])
 
   const addToHistory = useCallback(
     (result: RouteResult) => {
@@ -245,6 +250,14 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
 
   const calculateRoute = useCallback(async () => {
     if (selectedCities.length < 2) return
+    if (selectedCities.length > pointLimit(config)) {
+      setError(`Limite de ${pointLimit(config)} pontos totais, incluindo a origem`)
+      return
+    }
+    setError(null)
+    setResults(null)
+    setComparison({ quantum: null, classical: null })
+    const requestRevision = ++revision.current
     setIsCalculating(true)
     setCalculationProgress(0)
 
@@ -264,6 +277,8 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
         use_real_roads: config.useRealRoads,
       })
 
+      if (requestRevision !== revision.current) return
+
       // Track API usage when real roads are used
       if (config.useRealRoads && data.used_real_roads) {
         // Each calculation uses approximately n*(n-1)/2 API calls for distance matrix
@@ -276,26 +291,25 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
       addToHistory(result)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Calculation failed"
-      setResults({
-        success: false,
-        route: [],
-        totalDistance: 0,
-        timeMs: 0,
-        method: "",
-        usedRealRoads: false,
-        fuelCost: 0,
-        sequence: [],
-      })
+      if (requestRevision === revision.current) setError(message)
       console.error("Route calculation error:", message)
     } finally {
       clearInterval(progressInterval)
       setCalculationProgress(100)
-      setTimeout(() => setIsCalculating(false), 300)
+      setIsCalculating(false)
     }
   }, [selectedCities, config, addToHistory, incrementUsage])
 
   const calculateComparison = useCallback(async () => {
     if (selectedCities.length < 2) return
+    if (selectedCities.length > pointLimit({ ...config, algorithmType: "quantum" })) {
+      setError(`Limite de ${pointLimit({ ...config, algorithmType: "quantum" })} pontos totais, incluindo a origem`)
+      return
+    }
+    setError(null)
+    setResults(null)
+    setComparison({ quantum: null, classical: null })
+    const requestRevision = ++revision.current
     setIsCalculating(true)
     setCalculationProgress(0)
 
@@ -312,6 +326,7 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
         apiCalculateRoute({ locations, solver: "exact_eigensolver", use_real_roads: useRealRoads }),
       ])
 
+      if (requestRevision !== revision.current) return
       const classicalResult = parseApiResult(classicalData, selectedCities)
       const quantumResult = parseApiResult(quantumData, selectedCities)
 
@@ -325,15 +340,18 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
       addToHistory(quantumResult)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Comparison failed"
+      if (requestRevision === revision.current) setError(message)
       console.error("Comparison error:", message)
     } finally {
       clearInterval(progressInterval)
       setCalculationProgress(100)
-      setTimeout(() => setIsCalculating(false), 300)
+      setIsCalculating(false)
     }
   }, [selectedCities, config, addToHistory])
 
   const clearResults = useCallback(() => {
+    revision.current += 1
+    setError(null)
     setResults(null)
     setComparison({ quantum: null, classical: null })
     setCalculationProgress(0)
@@ -352,9 +370,16 @@ export function RouteProvider({ children }: { children: React.ReactNode }) {
     removeCity,
     reorderCities,
     availableCities,
-    setSelectedCities,
+    setSelectedCities: (cities) => {
+      revision.current += 1
+      setSelectedCities(cities.slice(0, pointLimit(config)))
+      setResults(null)
+      setError(null)
+      setComparison({ classical: null, quantum: null })
+    },
     config,
     updateConfig,
+    error,
     results,
     comparison,
     isCalculating,

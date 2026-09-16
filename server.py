@@ -24,7 +24,7 @@ from backend.routing import (
     get_route_with_geometry,
     is_api_key_configured,
 )
-from backend.solvers import SOLVERS, solve_tsp
+from backend.solvers import SOLVERS, resolve_solver, solve_tsp
 
 load_dotenv()
 
@@ -122,7 +122,7 @@ def create_app(testing: bool = False) -> Flask:
         if not isinstance(num_points, int) or isinstance(num_points, bool):
             return _error("num_points must be an integer", 400)
         try:
-            locations = generate_route(city_key, algorithm, num_points)
+            locations = generate_route(city_key, algorithm, num_points, payload.get("method"))
         except ValueError as exc:
             return _error(str(exc), 400)
         return jsonify(
@@ -142,6 +142,7 @@ def create_app(testing: bool = False) -> Flask:
 
         try:
             locations = _validate_locations(raw_locations)
+            resolve_solver(solver_name, len(locations))
             if not isinstance(use_real_roads, bool):
                 raise ValueError("use_real_roads must be a boolean")
             if use_real_roads and not is_api_key_configured():
@@ -169,10 +170,14 @@ def create_app(testing: bool = False) -> Flask:
                 logger.error("Solver failed solver=%s error=%s", solver_name, result.get("error"))
                 return _error("Optimization failed", 422)
 
+            if not isfinite(result["total_distance"]) or result["total_distance"] <= 0:
+                return _error("Route distance unavailable", 502)
+
             response: dict[str, Any] = {
                 "success": True,
                 "route": result["route"],
                 "total_distance": float(result["total_distance"]),
+                "distance_matrix": distance_matrix.tolist(),
                 "time_ms": float(result["time_ms"]),
                 "method": result["method"],
                 "solver": result["solver"],
@@ -180,7 +185,9 @@ def create_app(testing: bool = False) -> Flask:
                 "execution": result["execution"],
                 "used_real_roads": use_real_roads,
             }
-            _add_real_road_details(response, raw_locations, result["route"], duration_matrix)
+            geometry_error = _add_real_road_details(response, raw_locations, result["route"], duration_matrix)
+            if geometry_error:
+                return geometry_error
             return jsonify(response)
         except ValueError as exc:
             return _error(str(exc), 400)
@@ -220,6 +227,7 @@ def create_app(testing: bool = False) -> Flask:
             response["total_duration_min"] = float(route_result.duration_min)
         else:
             logger.warning("OpenRouteService geometry failed: %s", route_result.error)
+            return _error("Road geometry service failed", 502)
 
     return app
 

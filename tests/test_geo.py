@@ -19,5 +19,5 @@ def test_distance_matrix_shape_and_diagonal():
 
 
 def test_generate_route_validates_algorithm_limit():
-    with pytest.raises(ValueError, match="entre 1 e 3"):
+    with pytest.raises(ValueError, match="2 to 4 total points"):
         generate_route("sao_paulo", "quantum", 4)

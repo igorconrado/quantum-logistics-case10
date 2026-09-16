@@ -183,3 +183,68 @@ requirements*.txt    Bounded Python runtime and development dependencies
 ## Author and license
 
 [Igor Conrado](https://github.com/igorconrado) · [LinkedIn](https://www.linkedin.com/in/igorconrado/) · [MIT License](LICENSE)
+
+## COBENGE demo regression checks
+
+Total-point capacity includes the origin once. `frontend_base/lib/algorithm-limits.json`
+is shared by the Python backend and TypeScript frontend: quantum methods allow 4
+total points (2 or 3 neighborhoods in the UI), and brute force allows 8 total
+points (at most 7 neighborhoods). Switching algorithms clamps the requested count
+and keeps the first allowed points, preserving the origin and their order.
+
+The previous intracity selector treated a total-point limit as a neighborhood
+limit. It therefore generated 5 points for a quantum selection of 4 neighborhoods.
+The existing solver selection contract is preserved and capacity is validated
+before either routing or optimization.
+
+Two independent error paths produced misleading zero metrics: ORS matrix `null`
+entries were converted to zero-cost edges, and frontend request failures created
+a result object with zero distance, time and fuel cost. The UI displayed that
+object without checking success. The request was already awaited; this was not
+an early asynchronous calculation. Integer rounding also discarded short distances.
+
+Unavailable, malformed, nonfinite, negative and all-zero road matrices now fail
+explicitly and are not cached. HTTP errors, missing credentials, timeout and
+geometry failures do not publish metrics or history. Successful distances retain
+their precision; fuel cost remains distance in km times R$0.635/km. ORS receives
+`[longitude, latitude]`, with distances requested in km and durations converted
+from seconds to minutes, as specified in the
+[ORS matrix documentation](https://giscience.github.io/openrouteservice-r/reference/ors_matrix.html).
+The displayed road matrix is the matrix used by the solver. Haversine is explicitly
+labeled as a straight-line estimate; there is no automatic distance fallback.
+
+Run offline regression checks from the repository root:
+
+```sh
+python -m pytest -q
+python -m unittest test_capacity test_routing_regressions -v
+cd frontend_base
+npm ci
+npm test
+npx tsc --noEmit
+npm run build
+```
+
+Manual validation (`python server.py` and `npm run dev` in separate terminals):
+
+1. Choose Intracidade and Belo Horizonte. Quantum must offer only 2 and 3
+   neighborhoods. Generate 3: the list must contain 4 points, starting at the hub.
+2. Choose classical brute force. Generate 7 neighborhoods: 8 total points must
+   calculate successfully. Switching back to quantum must retain only 4 points
+   and set the neighborhood count to 3.
+3. With real roads disabled, calculate and verify positive distance, fuel cost
+   and the Haversine estimate label. Local browser checks produced 6.68283 km
+   for the 4-point quantum route and 28.378 km for the 8-point brute-force route.
+4. With real roads enabled and a valid `ORS_API_KEY`, verify loading followed by
+   road metrics and the ORS matrix. Without a configured key, verify an explicit
+   error and no numeric result cards. Retry with roads disabled to recover.
+5. Offline tests inject a directed ORS matrix with 1.25/2.5 km edges and 120/180
+   second durations: the result must be 3.75 km and 5 minutes. Tests also cover
+   null entries, malformed matrices, HTTP 401/403/429/500, timeout, missing key,
+   geometry failure, delayed responses, stale responses, and HTTP-200 error bodies.
+
+Validation on 2026-09-16: 21 existing Python tests, 6 new Python tests and 15 frontend tests passed, along with
+TypeScript and production build. Browser checks passed for both capacity limits,
+actual quantum and brute-force Haversine calculations, and missing-key failure.
+A live authenticated ORS success was not tested because this local environment
+had no key; ORS success and service failures were tested using controlled responses.

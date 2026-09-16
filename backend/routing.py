@@ -342,18 +342,16 @@ def get_distance_matrix_real(locations: List[Dict]) -> RealDistanceMatrix:
                 error=f"Resposta inválida: {data.get('error', 'Sem distances')}"
             )
 
-        # ORS may return None for unreachable pairs - replace with 0
-        raw_distances = data["distances"]
-        raw_durations = data.get("durations", [])
-
-        distances = np.array(
-            [[0 if v is None else v for v in row] for row in raw_distances],
-            dtype=float
-        )
-        durations = np.array(
-            [[0 if v is None else v for v in row] for row in raw_durations],
-            dtype=float
-        ) / 60  # seconds -> minutes
+        # Unreachable pairs are unavailable, never free edges for the solver.
+        distances = np.asarray(data["distances"], dtype=float)
+        durations = np.asarray(data.get("durations"), dtype=float)
+        expected_shape = (len(locations), len(locations))
+        for label, matrix in (("distances", distances), ("durations", durations)):
+            if matrix.shape != expected_shape or not np.isfinite(matrix).all() or (matrix < 0).any():
+                raise ValueError(f"ORS: matriz de {label} incompleta ou rota indisponível")
+        if not np.any(distances > 0):
+            raise ValueError("ORS: distância indisponível (matriz sem deslocamento)")
+        durations = durations / 60  # ORS distances are requested in km; durations are seconds.
 
         result = RealDistanceMatrix(
             distances=distances,

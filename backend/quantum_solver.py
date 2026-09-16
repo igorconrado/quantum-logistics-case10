@@ -5,6 +5,8 @@ Executa a otimização quântica usando o problema QUBO formulado.
 Usa simulador Qiskit Aer localmente.
 """
 
+from backend.capacity import ALGORITHM_LIMITS
+
 import numpy as np
 import time
 from typing import Dict, List
@@ -83,7 +85,7 @@ def solve_quantum(distance_matrix: np.ndarray) -> Dict:
     n = len(distance_matrix)
 
     # The n²-variable formulation and exact diagonalization are intentionally bounded.
-    if n > 4:
+    if n > ALGORITHM_LIMITS["quantum_numpy"]:
         elapsed_time = (time.time() - start_time) * 1000
         return {
             "route": [],

@@ -5,6 +5,8 @@ from typing import Callable, Dict
 
 import numpy as np
 
+from backend.capacity import ALGORITHM_LIMITS
+
 from backend.classic_solver import (
     solve_tsp_brute_force,
     solve_tsp_nearest_neighbor,
@@ -33,18 +35,18 @@ def _solve_exact_eigensolver(distance_matrix: np.ndarray) -> Dict:
 
 SOLVERS = {
     "brute_force": SolverSpec(
-        "brute_force", "Exact brute force", 8, solve_tsp_brute_force, "classical"
+        "brute_force", "Exact brute force", ALGORITHM_LIMITS["brute_force"], solve_tsp_brute_force, "classical"
     ),
     "nearest_neighbor": SolverSpec(
-        "nearest_neighbor", "Nearest-neighbor heuristic", 27, solve_tsp_nearest_neighbor, "classical"
+        "nearest_neighbor", "Nearest-neighbor heuristic", ALGORITHM_LIMITS["nearest_neighbor"], solve_tsp_nearest_neighbor, "classical"
     ),
     "networkx": SolverSpec(
-        "networkx", "NetworkX approximation", 27, solve_tsp_networkx, "classical"
+        "networkx", "NetworkX approximation", ALGORITHM_LIMITS["networkx"], solve_tsp_networkx, "classical"
     ),
     "exact_eigensolver": SolverSpec(
         "exact_eigensolver",
         "Exact classical eigensolver via Qiskit",
-        4,
+        ALGORITHM_LIMITS["quantum_numpy"],
         _solve_exact_eigensolver,
         "classical_quantum_model",
     ),
